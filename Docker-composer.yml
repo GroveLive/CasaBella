@@ -1,0 +1,8 @@
+services:
+  web:
+    image: python:3.13-alpine
+    build: 
+      context: "https://github.com/GroveLive/CasaBella.git"
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
