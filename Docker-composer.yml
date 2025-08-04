@@ -13,4 +13,19 @@ services:
     environment:
       - FLASK_ENV=development
       - FLASK_APP=run.py
-    command: ["flask", "run", "--host=0.0.0.0", "--port=8080"]
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=F2lCLAg76EfRwbd1mkTnC2ZdEuwp8teHyADb7n23YomSk2VI4CipeyW21XZLApIe
+      - POSTGRES_DB=CasaBella
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
