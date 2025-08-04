@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Admin - CasaBella</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 10px; }
+        .message { margin-top: 10px; }
+        .success { color: green; }
+        .danger { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Admin - {{ user.nombre }}</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <p class="message {{ category }}">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <h2>Todas las Citas</h2>
+    <ul>
+        {% for cita in citas %}
+            <li>{{ cita.fecha_hora }} - {{ cita.estado }} (Cliente: {{ cita.cliente.nombre }})</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('auth.logout') }}">Cerrar Sesión</a>
+</body>
+</html>

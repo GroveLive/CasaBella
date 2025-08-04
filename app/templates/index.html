@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a CasaBella</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+                <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="CasaBella" class="rounded-circle me-2" width="48" height="48">
+                CasaBella
+            </a>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary me-2">Iniciar Sesión</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Registrarse</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="container my-5 text-center">
+        <h1 class="display-4 fw-bold text-primary">Bienvenido a CasaBella</h1>
+        <p class="lead">Tu salón de belleza y bienestar en Guavatá, Colombia. Descubre servicios personalizados y productos de calidad.</p>
+        <a href="#services" class="btn btn-lg btn-success mt-3">Explorar Servicios</a>
+    </div>
+
+    <!-- Services Section -->
+    <div id="services" class="container my-5">
+        <h2 class="text-center mb-4">Nuestros Servicios</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-scissors display-4 text-primary"></i>
+                        <h5 class="card-title mt-3">Corte de Cabello</h5>
+                        <p class="card-text">Estiliza tu look con nuestros expertos estilistas.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-brush display-4 text-primary"></i>
+                        <h5 class="card-title mt-3">Manicure y Pedicure</h5>
+                        <p class="card-text">Manos y pies perfectos con tratamientos relajantes.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-droplet display-4 text-primary"></i>
+                        <h5 class="card-title mt-3">Tratamientos Faciales</h5>
+                        <p class="card-text">Cuida tu piel con nuestras terapias especializadas.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p class="mb-0">&copy; 2025 CasaBella. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
