@@ -10,6 +10,8 @@ bp = Blueprint('main', __name__)
 @bp.route('/')
 def index():
     servicios = Servicio.query.limit(3).all()
+    if not servicios:
+        flash("No hay servicios disponibles actualmente.", "warning")
     return render_template('index.html', servicios=servicios)
 
 @bp.route('/servicios')
@@ -81,3 +83,16 @@ def reservar_cita():
     else:
         flash("Error al reservar la cita. Completa todos los campos.", "danger")
     return redirect(url_for('main.citas'))
+
+@bp.route('/contacto', methods=['POST'])
+def contacto():
+    if request.method == 'POST':
+        nombre = request.form.get('name')
+        telefono = request.form.get('phone')
+        email = request.form.get('email')
+        servicio = request.form.get('service')
+        mensaje = request.form.get('message')
+        # Aquí puedes guardar en la base de datos o enviar un email
+        flash("Solicitud de contacto recibida. Te contactaremos pronto.", "success")
+        return redirect(url_for('main.index'))
+    return redirect(url_for('main.index'))  # Redirige si no es POST
