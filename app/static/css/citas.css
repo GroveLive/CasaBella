@@ -1,0 +1,16 @@
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+}
+
+.form-select, .form-control {
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 0.3rem rgba(59, 130, 246, 0.4);
+}

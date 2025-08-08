@@ -1,9 +1,11 @@
-
 {% extends "base.html" %}
 {% block title %}Inicio - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
 {% block content %}
     <!-- Hero Section -->
-    <section class="hero-section bg-gradient-primary text-white py-5">
+    <section class="hero-section">
         <div class="container">
             <div class="row align-items-center min-vh-75">
                 <div class="col-lg-6 text-center text-lg-start">
@@ -245,11 +247,11 @@
     </section>
 
     <!-- Promotion Section -->
-    <section class="py-5 bg-gradient-primary text-white" id="promocion">
+    <section class="py-5 bg-light" id="promocion">
         <div class="container text-center">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <h2 class="display-5 fw-bold mb-4">¡Bienvenidos a Casa Bella!</h2>
+                    <h2 class="display-5 fw-bold text-dark mb-4">¡Bienvenidos a Casa Bella!</h2>
                     <p class="lead mb-3">Especialistas en cuidado personal y productos de belleza</p>
                     <p class="fs-5 mb-4">Visítanos en Guavatá, Colombia y descubre nuestros servicios</p>
                     <a href="{{ url_for('main.citas') }}" class="btn btn-warning btn-lg px-5 py-3">

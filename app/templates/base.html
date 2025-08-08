@@ -10,16 +10,18 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Base CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <!-- CSS específico por página -->
+    {% block styles %}{% endblock %}
 </head>
-<body>
+<body data-theme="dark">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm border-bottom sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
-                <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="Casa Bella" class="rounded-circle me-2" width="60" height="60">
+                <img src="{{ url_for('static', filename='images/casa-bella-nav-logo-dark.jpeg') }}" alt="Casa Bella" class="nav-logo-img rounded-circle me-2" width="60" height="60">
                 <span class="fw-bold text-primary d-none d-md-inline">Casa Bella</span>
             </a>
             
@@ -47,15 +49,15 @@
                 </ul>
                 
                 <div class="d-flex align-items-center">
-                    <button class="btn btn-outline-secondary me-2" id="themeToggle">
-                        <i class="bi bi-sun"></i>
+                    <button class="btn btn-outline-light me-2" id="themeToggle">
+                        <i class="bi bi-moon-stars"></i>
                     </button>
                     
                     <!-- Guest Navigation -->
                     {% if not current_user.is_authenticated %}
                     <div class="guest-nav">
                         <div class="dropdown">
-                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-person-circle"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -68,7 +70,7 @@
                     <!-- User Navigation -->
                     <div class="user-nav">
                         <div class="dropdown">
-                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-person-circle"></i>
                                 <span class="user-name ms-1">{{ current_user.nombre }}</span>
                             </button>
@@ -104,7 +106,7 @@
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="d-flex align-items-center mb-3">
-                        <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="Casa Bella" class="rounded-circle me-3" width="60" height="60">
+                        <img src="{{ url_for('static', filename='images/casa-bella-logo-glam-dark.jpeg') }}" alt="Casa Bella" class="logo-img rounded-circle me-3" width="60" height="60">
                         <h5 class="mb-0 text-white">Casa Bella</h5>
                     </div>
                     <p class="text-light-emphasis">
@@ -178,7 +180,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>

@@ -1,0 +1,23 @@
+
+.service-card {
+    min-height: 550px;
+    border: 1px solid var(--border-color);
+}
+
+.service-image {
+    height: 300px;
+    transition: all 0.5s ease;
+}
+
+.service-card:hover .service-image {
+    transform: scale(1.15);
+}
+
+.service-card .btn {
+    background: var(--gradient-primary);
+    border: none;
+}
+
+.service-card .btn:hover {
+    background: linear-gradient(135deg, darken(var(--primary-color), 10%) 0%, var(--secondary-color) 100%);
+}
