@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Casa Bella - Salón de Belleza y Distribuidora{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+                <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="Casa Bella" class="rounded-circle me-2" width="60" height="60">
+                <span class="fw-bold text-primary d-none d-md-inline">Casa Bella</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.servicios' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.servicios') }}">Servicios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.productos' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.productos') }}">Productos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.citas') }}">Reservar Cita</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium" href="#contacto">Contacto</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-outline-secondary me-2" id="themeToggle">
+                        <i class="bi bi-sun"></i>
+                    </button>
+                    
+                    <!-- Guest Navigation -->
+                    {% if not current_user.is_authenticated %}
+                    <div class="guest-nav">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.login') }}"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.register') }}"><i class="bi bi-person-plus me-2"></i>Registrarse</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- User Navigation -->
+                    <div class="user-nav">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i>
+                                <span class="user-name ms-1">{{ current_user.nombre }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li class="dropdown-header">
+                                    <div class="user-name fw-bold">{{ current_user.nombre }}</div>
+                                    <small class="user-email text-muted">{{ current_user.email }}</small>
+                                    <small class="user-role text-muted d-block">{{ current_user.rol }}</small>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.cliente_dashboard' if current_user.rol == 'cliente' else 'auth.admin_dashboard' if current_user.rol == 'admin' else 'auth.empleado_dashboard') }}"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.citas') }}"><i class="bi bi-calendar me-2"></i>Mis Citas</a></li>
+                                {% if current_user.rol == 'admin' %}
+                                <li class="admin-only"><a class="dropdown-item" href="{{ url_for('auth.admin_dashboard') }}"><i class="bi bi-gear me-2"></i>Panel Admin</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item logout-btn" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="Casa Bella" class="rounded-circle me-3" width="60" height="60">
+                        <h5 class="mb-0 text-white">Casa Bella</h5>
+                    </div>
+                    <p class="text-light-emphasis">
+                        Casa Bella - Salón y Distribuidora. Especialistas en cuidado personal y productos de belleza en Guavatá, Colombia.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="text-light me-3"><i class="bi bi-facebook fs-5"></i></a>
+                        <a href="#" class="text-light me-3"><i class="bi bi-instagram fs-5"></i></a>
+                        <a href="#" class="text-light me-3"><i class="bi bi-whatsapp fs-5"></i></a>
+                        <a href="#" class="text-light"><i class="bi bi-envelope fs-5"></i></a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white fw-bold mb-3">Servicios</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Manicure y Pedicure</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Cortes de Cabello</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Tratamientos Faciales</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Cuidado Personal</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white fw-bold mb-3">Productos</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Cosméticos</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Productos de Belleza</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Cuidado Personal</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Accesorios</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4">
+                    <h6 class="text-white fw-bold mb-3">Contacto</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-envelope me-2"></i>
+                            <span class="text-light-emphasis">xiomarawo-0298@hotmail.com</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            <span class="text-light-emphasis">Calle 5 4, Guavatá, Colombia</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-clock me-2"></i>
+                            <span class="text-light-emphasis">Lun-Dom: 8:00 AM - 7:00 PM</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-instagram me-2"></i>
+                            <span class="text-light-emphasis">@CasaBella</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="my-4 border-secondary">
+            
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light-emphasis">&copy; 2025 Casa Bella. Todos los derechos reservados.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-light-emphasis text-decoration-none me-3">Política de Privacidad</a>
+                    <a href="#" class="text-light-emphasis text-decoration-none">Términos de Servicio</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

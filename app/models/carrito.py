@@ -1,17 +1,12 @@
-
+from sqlalchemy import Enum
 from app import db
 
 class Carrito(db.Model):
     __tablename__ = 'carrito'
+    id_carrito = db.Column(db.Integer, primary_key=True)
+    id_usuario = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'))
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+    estado = db.Column(Enum('activo', 'completado', 'abandonado', name='estado_carrito_enum'), default='activo')
 
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False, default=1)
-    fecha_agregado = db.Column(db.DateTime, default=db.func.now())
-
-    usuario = db.relationship('Usuario', backref=db.backref('carrito_items', lazy=True))
-    producto = db.relationship('Producto', backref=db.backref('carrito_items', lazy=True))
-
-    def __repr__(self):
-        return f'<Carrito {self.id} - {self.producto.nombre} x{self.cantidad}>'
+    # Relaciones usando cadenas
+    detalles = db.relationship('DetalleCarrito', backref='carrito', lazy=True)

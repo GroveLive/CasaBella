@@ -17,3 +17,5 @@ class Producto(db.Model):
     inventario_movimientos = db.relationship('InventarioMovimiento', backref='producto', lazy=True)
     promociones = db.relationship('Promocion', backref='producto', lazy=True)
     reseñas = db.relationship('Reseña', backref='producto', lazy=True)
+    detalle_carritos = db.relationship('DetalleCarrito', backref='producto', lazy=True)
+    guardados = db.relationship('Guardado', backref='producto', lazy=True)

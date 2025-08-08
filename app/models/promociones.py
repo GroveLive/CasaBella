@@ -11,3 +11,4 @@ class Promocion(db.Model):
     fecha_fin = db.Column(db.DateTime, nullable=False)
     id_servicio = db.Column(db.Integer, db.ForeignKey('servicios.id_servicio'))
     id_producto = db.Column(db.Integer, db.ForeignKey('productos.id_producto'))
+

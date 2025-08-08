@@ -19,6 +19,8 @@ class Usuario(db.Model, UserMixin):
     ventas = db.relationship('Venta', backref='usuario', lazy=True)
     notificaciones = db.relationship('Notificacion', backref='usuario', lazy=True)
     reseñas = db.relationship('Reseña', backref='usuario', lazy=True)
+    carritos = db.relationship('Carrito', backref='usuario', lazy=True)
+    guardados = db.relationship('Guardado', backref='usuario', lazy=True)
 
     def get_id(self):
         return str(self.id_usuario)

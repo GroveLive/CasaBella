@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Reservar Cita - Casa Bella{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Reservar Cita</h1>
+        <p class="lead mb-4">Elige un servicio y selecciona una fecha y hora para tu cita.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="card border-0 shadow-sm p-4">
+            <form method="POST" action="{{ url_for('main.reservar_cita') }}" class="row g-3">
+                <div class="col-12">
+                    <label for="servicio_id" class="form-label">Servicio</label>
+                    <select class="form-select" id="servicio_id" name="servicio_id" required>
+                        <option value="">Selecciona un servicio</option>
+                        {% for servicio in servicios %}
+                            <option value="{{ servicio.id_servicio }}" {% if servicio_id == servicio.id_servicio %}selected{% endif %}>
+                                {{ servicio.nombre }} - ${{ '%0.2f'|format(servicio.precio) }} ({{ servicio.duracion }} min)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label for="fecha_hora" class="form-label">Fecha y Hora</label>
+                    <input type="datetime-local" id="fecha_hora" name="fecha_hora" class="form-control" required>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary w-100">Reservar Cita</button>
+                </div>
+            </form>
+        </div>
+        <p class="mt-3 text-muted">Nota: Las citas están sujetas a disponibilidad. Confirma tu reserva después de enviar.</p>
+    </div>
+{% endblock %}

@@ -14,3 +14,5 @@ class Servicio(db.Model):
     detalle_ventas = db.relationship('DetalleVenta', backref='servicio', lazy=True)
     promociones = db.relationship('Promocion', backref='servicio', lazy=True)
     reseñas = db.relationship('Reseña', backref='servicio', lazy=True)
+    detalle_carritos = db.relationship('DetalleCarrito', backref='servicio', lazy=True)
+    guardados = db.relationship('Guardado', backref='servicio', lazy=True)

@@ -1,4 +1,3 @@
-
 from app import db
 
 class Asignacion(db.Model):

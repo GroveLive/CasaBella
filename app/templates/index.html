@@ -1,79 +1,397 @@
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bienvenido a CasaBella</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
-    <!-- Header -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
+{% extends "base.html" %}
+{% block title %}Inicio - Casa Bella{% endblock %}
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section bg-gradient-primary text-white py-5">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
-                <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="CasaBella" class="rounded-circle me-2" width="48" height="48">
-                CasaBella
-            </a>
-            <div class="d-flex align-items-center">
-                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary me-2">Iniciar Sesión</a>
-                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Registrarse</a>
+            <div class="row align-items-center min-vh-75">
+                <div class="col-lg-6 text-center text-lg-start">
+                    <div class="hero-logo-container mb-4">
+                        <img src="{{ url_for('static', filename='images/casa-bella-logo-dark.jpeg') }}" alt="Casa Bella" class="hero-logo rounded-circle shadow-lg">
+                    </div>
+                    <h1 class="display-4 fw-bold mb-3 animate-fade-in-left">
+                        Bienvenida a <span class="text-warning">Casa Bella</span>
+                    </h1>
+                    <p class="lead fw-medium mb-2">Salón y Distribuidora</p>
+                    <p class="fs-5 mb-4 text-light">
+                        Somos especialistas en cuidado personal y productos de belleza. 
+                        Descubre nuestros servicios premium en Guavatá, Colombia.
+                    </p>
+                    <div class="hero-buttons d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
+                        <a href="{{ url_for('main.citas') }}" class="btn btn-warning btn-lg px-4 py-3">
+                            <i class="bi bi-calendar-check me-2"></i>Reservar Cita
+                        </a>
+                        <a href="{{ url_for('main.servicios') }}" class="btn btn-outline-light btn-lg px-4 py-3">
+                            <i class="bi bi-eye me-2"></i>Ver Servicios
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center mt-5 mt-lg-0">
+                    <div class="hero-image-container position-relative animate-fade-in-right">
+                        <img src="{{ url_for('static', filename='images/salon-interior.jpeg') }}" alt="Interior del salón Casa Bella" 
+                             class="img-fluid rounded-3 shadow-lg hero-image">
+                        <div class="hero-badge position-absolute">
+                            <div class="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center">
+                                <i class="bi bi-star-fill text-warning me-2"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">Nuevo</div>
+                                    <small class="text-muted">¡Visítanos!</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <div class="container my-5 text-center">
-        <h1 class="display-4 fw-bold text-primary">Bienvenido a CasaBella</h1>
-        <p class="lead">Tu salón de belleza y bienestar en Guavatá, Colombia. Descubre servicios personalizados y productos de calidad.</p>
-        <a href="#services" class="btn btn-lg btn-success mt-3">Explorar Servicios</a>
-    </div>
+    </section>
 
     <!-- Services Section -->
-    <div id="services" class="container my-5">
-        <h2 class="text-center mb-4">Nuestros Servicios</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <i class="bi bi-scissors display-4 text-primary"></i>
-                        <h5 class="card-title mt-3">Corte de Cabello</h5>
-                        <p class="card-text">Estiliza tu look con nuestros expertos estilistas.</p>
+    <section class="py-5 bg-light" id="servicios">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold text-dark mb-3">Nuestros Servicios</h2>
+                <p class="lead text-muted">Especialistas en cuidado personal y productos de belleza</p>
+            </div>
+            
+            <div class="row g-4" id="servicesContainer">
+                {% for servicio in servicios %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card service-card h-100 border-0 shadow-sm" data-category="{{ servicio.categoria }}">
+                        <div class="card-img-container">
+                            <img src="{{ url_for('static', filename='images/servicio_' ~ servicio.id_servicio ~ '.jpg') }}" class="card-img-top service-image" alt="{{ servicio.nombre }}">
+                            {% if servicio.popular %}
+                            <div class="position-absolute top-0 start-0 m-2"><span class="badge bg-warning"><i class="bi bi-star me-1"></i>Popular</span></div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-primary fw-bold">{{ servicio.nombre }}</h5>
+                            <p class="card-text text-muted flex-grow-1">{{ servicio.descripcion }}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="h4 text-dark fw-bold mb-0">${{ '%0.2f'|format(servicio.precio) }}</span>
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-clock me-1"></i>{{ servicio.duracion }} min
+                                </span>
+                            </div>
+                            <a href="{{ url_for('main.citas') }}" class="btn btn-primary">
+                                <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
+                            </a>
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <i class="bi bi-brush display-4 text-primary"></i>
-                        <h5 class="card-title mt-3">Manicure y Pedicure</h5>
-                        <p class="card-text">Manos y pies perfectos con tratamientos relajantes.</p>
-                    </div>
-                </div>
+        </div>
+    </section>
+
+    <!-- Business Hours Section -->
+    <section class="py-5" id="horarios">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold text-dark mb-3">Horarios de Atención</h2>
+                <p class="lead text-muted">Visítanos en nuestros horarios de atención</p>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <i class="bi bi-droplet display-4 text-primary"></i>
-                        <h5 class="card-title mt-3">Tratamientos Faciales</h5>
-                        <p class="card-text">Cuida tu piel con nuestras terapias especializadas.</p>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-primary text-white text-center py-3">
+                            <h4 class="mb-0"><i class="bi bi-clock me-2"></i>Horario de Atención</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="fw-medium">Lunes</span>
+                                        <span class="text-muted">9:00 a.m. - 7:00 p.m.</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="fw-medium">Martes</span>
+                                        <span class="text-muted">8:00 a.m. - 7:00 p.m.</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="fw-medium">Miércoles</span>
+                                        <span class="text-muted">9:00 a.m. - 7:00 p.m.</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="fw-medium">Jueves</span>
+                                        <span class="text-danger fw-bold">CERRADO</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="fw-medium">Viernes</span>
+                                        <span class="text-muted">9:00 a.m. - 7:00 p.m.</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="fw-medium">Sábado</span>
+                                        <span class="text-muted">9:00 a.m. - 7:00 p.m.</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center py-2">
+                                        <span class="fw-medium">Domingo</span>
+                                        <span class="text-muted">9:00 a.m. - 6:00 p.m.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt-4 mb-0">
+                                <i class="bi bi-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Te recomendamos reservar tu cita con anticipación
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Footer -->
-    <footer class="bg-light text-center py-3 mt-5">
-        <p class="mb-0">&copy; 2025 CasaBella. Todos los derechos reservados.</p>
-    </footer>
+    <!-- Testimonials Section -->
+    <section class="py-5 bg-light" id="testimonios">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold text-dark mb-3">Lo que dicen nuestros clientes</h2>
+                <p class="lead text-muted">Testimonios reales de clientes satisfechos</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card testimonial-card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex mb-3">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                            </div>
+                            <p class="card-text text-muted mb-4">
+                                "Excelente servicio de manicure, muy profesional. El resultado superó mis expectativas."
+                            </p>
+                            <div class="d-flex align-items-center">
+                                <div class="testimonial-avatar bg-primary text-white rounded-circle me-3">
+                                    AL
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Ana López</h6>
+                                    <small class="text-muted">Cliente frecuente</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card testimonial-card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex mb-3">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                            </div>
+                            <p class="card-text text-muted mb-4">
+                                "El ambiente es muy relajante y el personal es súper amable. Definitivamente regresaré."
+                            </p>
+                            <div class="d-flex align-items-center">
+                                <div class="testimonial-avatar bg-success text-white rounded-circle me-3">
+                                    MG
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">María García</h6>
+                                    <small class="text-muted">Cliente nueva</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="card testimonial-card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex mb-3">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                            </div>
+                            <p class="card-text text-muted mb-4">
+                                "Los productos que venden son de excelente calidad. Mi esmalte duró más de dos semanas."
+                            </p>
+                            <div class="d-flex align-items-center">
+                                <div class="testimonial-avatar bg-info text-white rounded-circle me-3">
+                                    CR
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Carmen Ruiz</h6>
+                                    <small class="text-muted">Cliente VIP</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Promotion Section -->
+    <section class="py-5 bg-gradient-primary text-white" id="promocion">
+        <div class="container text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="display-5 fw-bold mb-4">¡Bienvenidos a Casa Bella!</h2>
+                    <p class="lead mb-3">Especialistas en cuidado personal y productos de belleza</p>
+                    <p class="fs-5 mb-4">Visítanos en Guavatá, Colombia y descubre nuestros servicios</p>
+                    <a href="{{ url_for('main.citas') }}" class="btn btn-warning btn-lg px-5 py-3">
+                        <i class="bi bi-calendar-heart me-2"></i>Reservar Cita
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="py-5" id="contacto">
+        <div class="container">
+            <div class="row g-5">
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold text-dark mb-4">Visítanos</h2>
+                    <div class="contact-info">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="contact-icon bg-primary text-white rounded-circle me-3">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 fw-bold">Dirección</h6>
+                                <p class="mb-0 text-muted">Calle 5 4, Guavatá, Colombia</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="contact-icon bg-primary text-white rounded-circle me-3">
+                                <i class="bi bi-envelope"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 fw-bold">Email</h6>
+                                <p class="mb-0 text-muted">xiomarawo-0298@hotmail.com</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-start mb-4">
+                            <div class="contact-icon bg-primary text-white rounded-circle me-3">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-2 fw-bold">Horarios</h6>
+                                <div class="text-muted">
+                                    <p class="mb-1"><strong>Lun - Mié, Vie - Sáb:</strong> 9:00 AM - 7:00 PM</p>
+                                    <p class="mb-1"><strong>Martes:</strong> 8:00 AM - 7:00 PM</p>
+                                    <p class="mb-1"><strong>Domingo:</strong> 9:00 AM - 6:00 PM</p>
+                                    <p class="mb-0"><strong>Jueves:</strong> <span class="text-danger">CERRADO</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body p-4">
+                            <h4 class="card-title fw-bold mb-4">Reserva tu cita</h4>
+                            <p class="text-muted mb-4">
+                                ¿Listo para una experiencia de belleza única? Reserva tu cita ahora y déjanos consentirte.
+                            </p>
+                            <form id="contactForm" action="{{ url_for('main.contacto') }}" method="POST">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" name="name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Teléfono</label>
+                                        <input type="tel" class="form-control" name="phone" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" name="email" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Servicio de interés</label>
+                                        <select class="form-select" name="service" required>
+                                            <option value="">Selecciona un servicio</option>
+                                            <option value="manicure">Manicure Básico</option>
+                                            <option value="corte">Corte de Cabello</option>
+                                            <option value="pedicure">Pedicure Spa</option>
+                                            <option value="facial">Tratamiento Facial</option>
+                                            <option value="productos">Productos de Belleza</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Mensaje</label>
+                                        <textarea class="form-control" rows="3" name="message" placeholder="Cuéntanos más detalles..."></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                                            <i class="bi bi-calendar-check me-2"></i>Enviar Solicitud
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% block scripts %}
+    <script>
+        // Load services dynamically
+        document.addEventListener('DOMContentLoaded', () => {
+            const servicesContainer = document.getElementById('servicesContainer');
+            {% if servicios %}
+                servicesContainer.innerHTML = '{{ servicios|tojson|safe }}'.map(service => `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card service-card h-100 border-0 shadow-sm" data-category="${service.category}">
+                            <div class="card-img-container">
+                                <img src="${service.image}" class="card-img-top service-image" alt="${service.name}">
+                                ${service.popular ? '<div class="position-absolute top-0 start-0 m-2"><span class="badge bg-warning"><i class="bi bi-star me-1"></i>Popular</span></div>' : ''}
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-primary fw-bold">${service.name}</h5>
+                                <p class="card-text text-muted flex-grow-1">${service.description}</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="h4 text-dark fw-bold mb-0">$${service.price.toFixed(2)}</span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-clock me-1"></i>${service.duration} min
+                                    </span>
+                                </div>
+                                <a href="{{ url_for('main.citas') }}" class="btn btn-primary">
+                                    <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            {% else %}
+                servicesContainer.innerHTML = '<p class="text-center text-muted">No hay servicios disponibles.</p>';
+            {% endif %}
+        });
+
+        // Redirigir si el usuario está logueado
+        {% if current_user.is_authenticated %}
+            window.location.href = '{{ url_for("auth.cliente_dashboard" if current_user.rol == "cliente" else "auth.admin_dashboard" if current_user.rol == "admin" else "auth.empleado_dashboard") }}';
+        {% endif %}
+    </script>
+    {% endblock %}
+{% endblock %}
