@@ -1,4 +1,3 @@
-
 /* Variables CSS para tema ultra glamuroso */
 :root {
     --primary-color: #1e3a8a; /* Azul real (modo oscuro por defecto) */
@@ -6,9 +5,8 @@
     --dark-bg: #0f172a; /* Negro profundo */
     --card-bg: #1e293b; /* Negro azulado opulento */
     --text-primary: #f9fafb; /* Blanco puro */
-    --text-secondary: #9ca3af; /* Gris sutil */
     --border-color: #d1d5db; /* Plata metálica (blanco grisáceo) */
-    --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 15px rgba(59, 130, 246, 0.1);
+    --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 15px rgba(30, 58, 138, 0.1); /* Sombras frías */
     --gradient-primary: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
 }
 
@@ -19,9 +17,8 @@
     --dark-bg: #f5f5f4; /* Crema suave (cercano a blanco) */
     --card-bg: #e5e7eb; /* Gris claro (cercano a blanco) */
     --text-primary: #1e293b; /* Negro profundo */
-    --text-secondary: #64748b; /* Gris medio */
     --border-color: #cbd5e1; /* Plata suave (blanco grisáceo) */
-    --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 15px rgba(96, 165, 250, 0.1);
+    --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 15px rgba(30, 64, 175, 0.1); /* Sombras frías */
     --gradient-primary: linear-gradient(135deg, #1e40af 0%, #60a5fa 100%);
 }
 
@@ -38,6 +35,38 @@ body {
     background-color: var(--dark-bg);
 }
 
+/* Sobrescritura de Bootstrap */
+[data-theme] .text-muted {
+    color: var(--text-primary) !important; /* Blanco o negro según modo */
+}
+
+[data-theme] .text-danger {
+    color: #dc2626 !important; /* Rojo puro y legible (excepción controlada) */
+}
+
+[data-theme] .btn-warning {
+    background: var(--gradient-primary) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-elegant);
+}
+
+[data-theme] .btn-warning:hover {
+    background: linear-gradient(135deg, darken(var(--primary-color), 10%) 0%, var(--secondary-color) 100%) !important;
+    transform: translateY(-3px) scale(1.02);
+}
+
+[data-theme] .bg-warning {
+    background-color: var(--card-bg) !important; /* Usa el fondo de la tarjeta */
+}
+
+[data-theme] .alert-warning {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-elegant);
+}
+
 /* Gradientes */
 .bg-gradient-primary {
     background: var(--gradient-primary);
@@ -52,7 +81,7 @@ body {
 }
 
 [data-theme="light"] .navbar {
-    background: rgba(229, 231, 235, 0.95); /* Gris claro con opacidad para contraste */
+    background: rgba(229, 231, 235, 0.95); /* Gris claro con opacidad */
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -63,7 +92,7 @@ body {
 }
 
 [data-theme="light"] .navbar-brand span {
-    color: var(--primary-color);
+    color: var(--secondary-color);
     text-shadow: none;
 }
 
@@ -131,7 +160,7 @@ body {
 
 .card:hover {
     transform: translateY(-15px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 20px rgba(30, 58, 138, 0.2); /* Azul frío */
 }
 
 .card-img-top {
@@ -151,7 +180,7 @@ body {
 }
 
 .card-text {
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 /* Buttons */
@@ -163,6 +192,7 @@ body {
     letter-spacing: 1px;
     transition: all 0.4s ease;
     border: 1px solid transparent;
+    color: var(--text-primary) !important;
 }
 
 .btn:hover {

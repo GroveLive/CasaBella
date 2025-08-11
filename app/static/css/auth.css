@@ -1,0 +1,110 @@
+.auth-section {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, #f9fafb 100%);
+}
+
+[data-theme="light"] .auth-section {
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, #ffffff 100%);
+}
+
+.auth-form {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .auth-form {
+    background: #1e293b;
+}
+
+.auth-form:hover {
+    transform: translateY(-5px);
+}
+
+.auth-form .form-label {
+    color: #1e293b;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .auth-form .form-label {
+    color: #f9fafb;
+}
+
+.auth-form .form-control {
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.75rem;
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] .auth-form .form-control {
+    border-color: #4b5563;
+    color: #f9fafb;
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.auth-form .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.auth-form .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    border: none;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    color: #ffffff;
+}
+
+.auth-form .btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    transform: scale(1.05);
+}
+
+.auth-form .alert {
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.auth-form .alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    color: #1e293b;
+}
+
+[data-theme="dark"] .auth-form .alert-info {
+    color: #f9fafb;
+}
+
+.auth-form .alert-danger {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #1e293b;
+}
+
+[data-theme="dark"] .auth-form .alert-danger {
+    color: #f9fafb;
+}
+
+.auth-form a {
+    color: #1e40af;
+    text-decoration: none;
+}
+
+.auth-form a:hover {
+    color: #60a5fa;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .auth-form {
+        padding: 1.5rem;
+    }
+}
