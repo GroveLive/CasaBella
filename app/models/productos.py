@@ -11,6 +11,9 @@ class Producto(db.Model):
     precio = db.Column(db.Numeric(10, 2), nullable=False)
     stock = db.Column(db.Integer, nullable=False)
     stock_minimo = db.Column(db.Integer, default=5)
+    estado = db.Column(Enum('activo', 'inactivo', 'en_promocion', name='estado_producto_enum'), default='activo')
+    imagen_url = db.Column(db.Text)
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     # Relaciones usando cadenas
     detalle_ventas = db.relationship('DetalleVenta', backref='producto', lazy=True)
