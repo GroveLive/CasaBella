@@ -39,44 +39,6 @@
         </div>
     </section>
 
-    <!-- Services Section -->
-    <section class="py-5" id="servicios">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold text-custom-accent mb-3">Nuestros Servicios</h2>
-                <p class="lead mb-4">Especialistas en cuidado personal y productos de belleza</p>
-            </div>
-            
-            <div class="row g-4" id="servicesContainer">
-                {% for servicio in servicios %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card service-card h-100 border-0 shadow-sm" data-category="{{ servicio.categoria }}">
-                        <div class="card-img-container">
-                            <img src="{{ url_for('static', filename='images/servicio_' ~ servicio.id_servicio ~ '.jpg') }}" class="card-img-top service-image" alt="{{ servicio.nombre }}">
-                            {% if servicio.popular %}
-                            <div class="position-absolute top-0 start-0 m-2"><span class="badge bg-custom-accent"><i class="bi bi-star me-1"></i>Popular</span></div>
-                            {% endif %}
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-custom-accent fw-bold">{{ servicio.nombre }}</h5>
-                            <p class="card-text flex-grow-1">{{ servicio.descripcion }}</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(servicio.precio) }}</span>
-                                <span class="badge bg-custom-accent">
-                                    <i class="bi bi-clock me-1"></i>{{ servicio.duracion }} min
-                                </span>
-                            </div>
-                            <a href="{{ url_for('main.citas') }}?servicio_id={{ servicio.id_servicio }}" class="btn btn-primary">
-                                <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </section>
-
     <!-- Business Hours Section -->
     <section class="py-5" id="horarios">
         <div class="container">
@@ -275,42 +237,12 @@
 
     {% block scripts %}
     <script>
-        // Load services dynamically
+        // Redirigir si el usuario está logueado
         document.addEventListener('DOMContentLoaded', () => {
-            const servicesContainer = document.getElementById('servicesContainer');
-            {% if servicios %}
-                servicesContainer.innerHTML = '{{ servicios|tojson|safe }}'.map(service => `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card service-card h-100 border-0 shadow-sm" data-category="${service.category}">
-                            <div class="card-img-container">
-                                <img src="${service.image}" class="card-img-top service-image" alt="${service.name}">
-                                ${service.popular ? '<div class="position-absolute top-0 start-0 m-2"><span class="badge bg-custom-accent"><i class="bi bi-star me-1"></i>Popular</span></div>' : ''}
-                            </div>
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title text-custom-accent fw-bold">${service.name}</h5>
-                                <p class="card-text flex-grow-1">${service.description}</p>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span class="h4 fw-bold mb-0">$${service.price.toFixed(2)}</span>
-                                    <span class="badge bg-custom-accent">
-                                        <i class="bi bi-clock me-1"></i>${service.duration} min
-                                    </span>
-                                </div>
-                                <a href="{{ url_for('main.citas') }}?servicio_id=${service.id}" class="btn btn-primary">
-                                    <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            {% else %}
-                servicesContainer.innerHTML = '<p class="text-center">No hay servicios disponibles.</p>';
+            {% if current_user.is_authenticated %}
+                window.location.href = '{{ url_for("auth.cliente_dashboard" if current_user.rol == "cliente" else "auth.admin_dashboard" if current_user.rol == "admin" else "auth.empleado_dashboard") }}';
             {% endif %}
         });
-
-        // Redirigir si el usuario está logueado
-        {% if current_user.is_authenticated %}
-            window.location.href = '{{ url_for("auth.cliente_dashboard" if current_user.rol == "cliente" else "auth.admin_dashboard" if current_user.rol == "admin" else "auth.empleado_dashboard") }}';
-        {% endif %}
     </script>
     {% endblock %}
 {% endblock %}

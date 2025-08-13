@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block title %}Servicios - Casa Bella{% endblock %}
 {% block styles %}
@@ -20,17 +19,14 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card service-card h-100 border-0 shadow-sm">
                     <div class="card-img-container">
-                        <img src="{{ url_for('static', filename='images/servicio_' ~ servicio.id_servicio ~ '.jpg') }}" class="card-img-top service-image" alt="{{ servicio.nombre }}">
-                        {% if servicio.popular %}
-                        <div class="position-absolute top-0 start-0 m-2"><span class="badge bg-warning"><i class="bi bi-star me-1"></i>Popular</span></div>
-                        {% endif %}
+                        <img src="{{ url_for('static', filename='images/servicio_' ~ servicio.id_servicio ~ '.jpg') if not servicio.imagen_url else servicio.imagen_url }}" class="card-img-top service-image" alt="{{ servicio.nombre }}">
                     </div>
                     <div class="card-body d-flex flex-column">
-                        <h5 class="card-title text-primary fw-bold">{{ servicio.nombre }}</h5>
-                        <p class="card-text text-muted flex-grow-1">{{ servicio.descripcion }}</p>
+                        <h5 class="card-title text-custom-accent fw-bold">{{ servicio.nombre }}</h5>
+                        <p class="card-text flex-grow-1">{{ servicio.descripcion or 'Sin descripción' }}</p>
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="h4 text-dark fw-bold mb-0">${{ '%0.2f'|format(servicio.precio) }}</span>
-                            <span class="badge bg-secondary">
+                            <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(servicio.precio) }}</span>
+                            <span class="badge bg-custom-accent">
                                 <i class="bi bi-clock me-1"></i>{{ servicio.duracion }} min
                             </span>
                         </div>
@@ -43,7 +39,7 @@
             {% endfor %}
         </div>
         {% if not servicios %}
-            <p class="text-center text-muted mt-4">No hay servicios disponibles en este momento.</p>
+            <p class="text-center">No hay servicios disponibles en este momento.</p>
         {% endif %}
     </div>
 {% endblock %}

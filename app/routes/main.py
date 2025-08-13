@@ -4,15 +4,17 @@ from app.models.servicios import Servicio
 from app.models.productos import Producto
 from app.models.citas import Cita
 from flask_login import login_required, current_user
+import logging
 
 bp = Blueprint('main', __name__)
 
+# Configurar logging básico
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 @bp.route('/')
 def index():
-    servicios = Servicio.query.limit(3).all()
-    if not servicios:
-        flash("No hay servicios disponibles actualmente.", "warning")
-    return render_template('index.html', servicios=servicios)
+    return render_template('index.html')
 
 @bp.route('/servicios')
 @login_required
@@ -29,7 +31,6 @@ def productos():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    from app.models.productos import Producto
     productos = Producto.query.all()
     return render_template('productos.html', productos=productos)
 
