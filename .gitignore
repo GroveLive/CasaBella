@@ -1,1 +1,60 @@
+.env# =========================
+# Archivos de entorno
+# =========================
 .env
+*.env
+
+# =========================
+# Archivos de Python
+# =========================
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Migraciones de Flask-Migrate
+# =========================
+migrations/
+
+# =========================
+# Archivos de base de datos local
+# =========================
+*.sqlite
+*.db
+instance/
+
+# =========================
+# Archivos de logs
+# =========================
+*.log
+
+# =========================
+# Archivos de dependencias compiladas
+# =========================
+*.so
+
+# =========================
+# Archivos de IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Carpeta de virtualenv
+# =========================
+venv/
+.env/
+.venv/
+
+# =========================
+# Archivos de cache de herramientas
+# =========================
+.pytest_cache/
+.cache/
+
+# =========================
+# Archivos temporales del sistema
+# =========================
+.DS_Store
+Thumbs.db
