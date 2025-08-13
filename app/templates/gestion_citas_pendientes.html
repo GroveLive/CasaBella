@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Citas Pendientes - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_citas_pendientes.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Citas Pendientes para Asignar</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID Cita</th>
+                    <th>Usuario</th>
+                    <th>Servicio</th>
+                    <th>Fecha y Hora</th>
+                    <th>Notas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cita in citas_pendientes %}
+                <tr>
+                    <td>{{ cita.id_cita }}</td>
+                    <td>{{ cita.usuario.nombre if cita.usuario else 'Sin asignar' }}</td>
+                    <td>{{ cita.servicio.nombre if cita.servicio else 'Sin servicio' }}</td>
+                    <td>{{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ cita.notas|default('Sin notas', true) }}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#asignarModal-{{ cita.id_cita }}">Asignar Empleado</button>
+                    </td>
+                </tr>
+                <!-- Modal para asignar empleado -->
+                <div class="modal fade" id="asignarModal-{{ cita.id_cita }}" tabindex="-1" aria-labelledby="asignarModalLabel-{{ cita.id_cita }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="asignarModalLabel-{{ cita.id_cita }}">Asignar Empleado a Cita #{{ cita.id_cita }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form method="POST" action="{{ url_for('main.asignar_empleado', id_cita=cita.id_cita) }}">
+                                    <input type="hidden" name="id_cita" value="{{ cita.id_cita }}">
+                                    <div class="mb-3">
+                                        <label for="id_empleado-{{ cita.id_cita }}" class="form-label">Seleccionar Empleado</label>
+                                        <select class="form-select" id="id_empleado-{{ cita.id_cita }}" name="id_empleado" required>
+                                            <option value="">Selecciona un empleado</option>
+                                            {% for empleado in empleados %}
+                                                <option value="{{ empleado.id_usuario }}">{{ empleado.nombre }} ({{ empleado.especialidad|default('Sin especialidad', true) }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="notas-{{ cita.id_cita }}" class="form-label">Notas</label>
+                                        <textarea class="form-control" id="notas-{{ cita.id_cita }}" name="notas" rows="3">{{ cita.notas|default('', true) }}</textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Asignar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

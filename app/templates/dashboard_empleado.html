@@ -1,15 +1,45 @@
-
 {% extends "base.html" %}
-{% block title %}Dashboard Empleado - Casa Bella{% endblock %}
+{% block title %}Panel Empleado - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/empleado_dashboard.css') }}">
+{% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Bienvenido, {{ user.nombre }} (Empleado)</h1>
-        <h2 class="mb-3">Mis Citas</h2>
-        <ul class="list-group">
-            {% for cita in user.citas_empleado %}
-                <li class="list-group-item">{{ cita.fecha_hora }} - {{ cita.estado }}</li>
-            {% endfor %}
-        </ul>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger mt-4">Cerrar Sesión</a>
+        <h1 class="mb-4">Panel de Empleado</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card text-white bg-info mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Citas Asignadas</h5>
+                        <p class="card-text">{{ citas_asignadas_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-white bg-secondary mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Citas Pendientes</h5>
+                        <p class="card-text">{{ citas_pendientes_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Gestión de Citas</h5>
+                        <a href="{{ url_for('main.gestion_citas') }}" class="btn btn-primary">Ver Citas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

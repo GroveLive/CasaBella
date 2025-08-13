@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Carrito - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/carrito.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Tu Carrito</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% if carrito and carrito.detalles %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Subtotal</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in carrito.detalles %}
+                    <tr>
+                        <td>{{ detalle.producto.nombre }}</td>
+                        <td>{{ detalle.cantidad }}</td>
+                        <td>${{ '%0.2f'|format(detalle.precio_unitario) }}</td>
+                        <td>${{ '%0.2f'|format(detalle.cantidad * detalle.precio_unitario) }}</td>
+                        <td>
+                            <a href="{{ url_for('main.eliminar_del_carrito', detalle_id=detalle.id_detalle_carrito) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"><strong>Total</strong></td>
+                        <td><strong>${{ '%0.2f'|format(carrito.detalles|sum(attribute='cantidad * precio_unitario')) }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <a href="{{ url_for('main.finalizar_compra') }}" class="btn btn-success">Finalizar Compra</a>
+        {% else %}
+            <p class="text-center">Tu carrito está vacío.</p>
+        {% endif %}
+    </div>
+{% endblock %}

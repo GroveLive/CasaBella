@@ -1,11 +1,69 @@
-
 {% extends "base.html" %}
-{% block title %}Dashboard Admin - Casa Bella{% endblock %}
+{% block title %}Panel Admin - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+{% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Bienvenido, {{ user.nombre }} (Admin)</h1>
-        <h2 class="mb-3">Gestión</h2>
-        <p class="mb-4">Aquí puedes agregar productos, gestionar citas, etc.</p>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger mt-4">Cerrar Sesión</a>
+        <h1 class="mb-4">Panel de Administrador</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Usuarios</h5>
+                        <p class="card-text">{{ usuarios_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Productos</h5>
+                        <p class="card-text">{{ productos_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Servicios</h5>
+                        <p class="card-text">{{ servicios_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Citas Pendientes</h5>
+                        <p class="card-text">{{ citas_pendientes_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Gestión de Usuarios</h5>
+                        <a href="{{ url_for('main.gestion_usuarios') }}" class="btn btn-primary">Ver Usuarios</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Gestión de Productos</h5>
+                        <a href="{{ url_for('main.gestion_productos') }}" class="btn btn-primary">Ver Productos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
