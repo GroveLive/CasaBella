@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Eliminar Servicio - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_servicios.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Eliminar Servicio</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <p>¿Estás seguro de que deseas eliminar el servicio "{{ servicio.nombre }}"?</p>
+        <form method="POST" action="{{ url_for('main.eliminar_servicio', id_servicio=servicio.id_servicio) }}">
+            <button type="submit" class="btn btn-danger">Eliminar</button>
+            <a href="{{ url_for('main.gestion_servicios') }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}
