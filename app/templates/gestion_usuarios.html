@@ -23,6 +23,9 @@
                     <th>Nombre</th>
                     <th>Email</th>
                     <th>Rol</th>
+                    <th>Teléfono</th>
+                    <th>Especialidad</th>
+                    <th>Fecha Registro</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -33,6 +36,9 @@
                     <td>{{ usuario.nombre }}</td>
                     <td>{{ usuario.email }}</td>
                     <td>{{ usuario.rol }}</td>
+                    <td>{{ usuario.telefono if usuario.telefono else 'N/A' }}</td>
+                    <td>{{ usuario.especialidad if usuario.especialidad else 'N/A' }}</td>
+                    <td>{{ usuario.fecha_registro.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>
                         <a href="{{ url_for('main.editar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-warning btn-sm">Editar</a>
                         <a href="{{ url_for('main.eliminar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-danger btn-sm">Eliminar</a>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Editar Usuario - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_usuarios.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Editar Usuario</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('main.editar_usuario', id_usuario=usuario.id_usuario) }}">
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ usuario.email }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="rol" class="form-label">Rol</label>
+                <select class="form-select" id="rol" name="rol" required>
+                    <option value="cliente" {% if usuario.rol == 'cliente' %}selected{% endif %}>Cliente</option>
+                    <option value="empleado" {% if usuario.rol == 'empleado' %}selected{% endif %}>Empleado</option>
+                    <option value="admin" {% if usuario.rol == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="contraseña" class="form-label">Contraseña (dejar en blanco para no cambiar)</label>
+                <input type="password" class="form-control" id="contraseña" name="contraseña">
+            </div>
+            <div class="mb-3">
+                <label for="telefono" class="form-label">Teléfono</label>
+                <input type="text" class="form-control" id="telefono" name="telefono" value="{{ usuario.telefono if usuario.telefono else '' }}">
+            </div>
+            <div class="mb-3" id="especialidad-field" style="display: {% if usuario.rol == 'empleado' %}block{% else %}none{% endif %};">
+                <label for="especialidad" class="form-label">Especialidad <span class="text-danger">*</span> (obligatorio para empleados)</label>
+                <input type="text" class="form-control" id="especialidad" name="especialidad" value="{{ usuario.especialidad if usuario.especialidad else '' }}" {% if usuario.rol == 'empleado' %}required{% endif %}>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{{ url_for('main.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+        <script>
+            document.getElementById('rol').addEventListener('change', function() {
+                var especialidadField = document.getElementById('especialidad-field');
+                var especialidadInput = document.getElementById('especialidad');
+                if (this.value === 'empleado') {
+                    especialidadField.style.display = 'block';
+                    especialidadInput.setAttribute('required', 'required');
+                } else {
+                    especialidadField.style.display = 'none';
+                    especialidadInput.removeAttribute('required');
+                }
+            });
+        </script>
+    </div>
+{% endblock %}

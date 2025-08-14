@@ -146,15 +146,22 @@ def agregar_usuario():
         email = request.form.get('email')
         rol = request.form.get('rol')
         contraseña = request.form.get('contraseña')
+        telefono = request.form.get('telefono')
+        especialidad = request.form.get('especialidad')
         if not all([nombre, email, rol, contraseña]):
-            flash("Todos los campos son obligatorios.", "danger")
+            flash("Los campos obligatorios (nombre, email, rol, contraseña) son requeridos.", "danger")
+            return render_template('agregar_usuario.html')
+        if rol == 'empleado' and not especialidad:
+            flash("La especialidad es obligatoria para empleados.", "danger")
             return render_template('agregar_usuario.html')
         try:
             usuario = Usuario(
                 nombre=nombre,
                 email=email,
+                contraseña=generate_password_hash(contraseña),
                 rol=rol,
-                contraseña=generate_password_hash(contraseña)
+                telefono=telefono,
+                especialidad=especialidad if rol == 'empleado' else None
             )
             db.session.add(usuario)
             db.session.commit()
@@ -179,8 +186,13 @@ def editar_usuario(id_usuario):
         email = request.form.get('email')
         rol = request.form.get('rol')
         contraseña = request.form.get('contraseña')
+        telefono = request.form.get('telefono')
+        especialidad = request.form.get('especialidad')
         if not all([nombre, email, rol]):
-            flash("Los campos nombre, email y rol son obligatorios.", "danger")
+            flash("Los campos obligatorios (nombre, email, rol) son requeridos.", "danger")
+            return render_template('editar_usuario.html', usuario=usuario)
+        if rol == 'empleado' and not especialidad:
+            flash("La especialidad es obligatoria para empleados.", "danger")
             return render_template('editar_usuario.html', usuario=usuario)
         try:
             usuario.nombre = nombre
@@ -188,6 +200,8 @@ def editar_usuario(id_usuario):
             usuario.rol = rol
             if contraseña:
                 usuario.contraseña = generate_password_hash(contraseña)
+            usuario.telefono = telefono
+            usuario.especialidad = especialidad if rol == 'empleado' else None
             db.session.commit()
             flash("Usuario actualizado con éxito.", "success")
             return redirect(url_for('main.gestion_usuarios'))

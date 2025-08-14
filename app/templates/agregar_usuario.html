@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Agregar Usuario - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_usuarios.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Agregar Nuevo Usuario</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('main.agregar_usuario') }}">
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="rol" class="form-label">Rol</label>
+                <select class="form-select" id="rol" name="rol" required>
+                    <option value="cliente">Cliente</option>
+                    <option value="empleado">Empleado</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="contraseña" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="contraseña" name="contraseña" required>
+            </div>
+            <div class="mb-3">
+                <label for="telefono" class="form-label">Teléfono</label>
+                <input type="text" class="form-control" id="telefono" name="telefono">
+            </div>
+            <div class="mb-3" id="especialidad-field" style="display: none;">
+                <label for="especialidad" class="form-label">Especialidad <span class="text-danger">*</span> (obligatorio para empleados)</label>
+                <input type="text" class="form-control" id="especialidad" name="especialidad" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Agregar Usuario</button>
+            <a href="{{ url_for('main.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+        <script>
+            document.getElementById('rol').addEventListener('change', function() {
+                var especialidadField = document.getElementById('especialidad-field');
+                if (this.value === 'empleado') {
+                    especialidadField.style.display = 'block';
+                    document.getElementById('especialidad').setAttribute('required', 'required');
+                } else {
+                    especialidadField.style.display = 'none';
+                    document.getElementById('especialidad').removeAttribute('required');
+                }
+            });
+        </script>
+    </div>
+{% endblock %}

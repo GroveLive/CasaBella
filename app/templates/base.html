@@ -20,7 +20,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark shadow-sm border-bottom sticky-top">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{% if current_user.is_authenticated and current_user.rol == 'cliente' %}{{ url_for('main.index') }}{% elif current_user.is_authenticated and current_user.rol == 'admin' %}{{ url_for('main.admin_dashboard') }}{% elif current_user.is_authenticated and current_user.rol == 'empleado' %}{{ url_for('main.empleado_dashboard') }}{% else %}{{ url_for('main.index') }}{% endif %}">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
                 <img src="{{ url_for('static', filename='images/casa-bella-logo.jpeg') }}" alt="Casa Bella" class="nav-logo-img rounded-circle me-2" width="60" height="60">
                 <span class="fw-bold text-primary d-none d-md-inline">Casa Bella</span>
             </a>
@@ -48,12 +48,12 @@
                             <li class="nav-item">
                                 <a class="nav-link fw-medium" href="#contacto">Contacto</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'auth.cliente_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('auth.cliente_dashboard') }}">Panel Principal</a>
-                            </li>
                         {% elif current_user.rol == 'admin' %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.admin_dashboard' or request.endpoint == 'main.gestion_usuarios' or request.endpoint == 'main.gestion_productos' or request.endpoint == 'main.gestion_servicios' or request.endpoint == 'main.gestion_citas_pendientes' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.admin_dashboard') }}">Panel Principal</a>
+                                <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'main.admin_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.admin_dashboard') }}">Panel Admin</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link fw-medium" href="{{ url_for('main.gestion_usuarios') }}">Gestión Usuarios</a>
@@ -69,7 +69,10 @@
                             </li>
                         {% elif current_user.rol == 'empleado' %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.empleado_dashboard' or request.endpoint == 'main.trabajar_citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.empleado_dashboard') }}">Panel Principal</a>
+                                <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'main.empleado_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.empleado_dashboard') }}">Panel Empleado</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint == 'main.trabajar_citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.trabajar_citas') }}">Trabajar Citas</a>
