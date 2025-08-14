@@ -45,7 +45,7 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <form method="POST" action="{{ url_for('main.asignar_empleado', id_cita=cita.id_cita) }}">
+                                <form method="POST" action="{{ url_for('employee.asignar_empleado', id_cita=cita.id_cita) }}">
                                     <input type="hidden" name="id_cita" value="{{ cita.id_cita }}">
                                     <div class="mb-3">
                                         <label for="id_empleado-{{ cita.id_cita }}" class="form-label">Seleccionar Empleado</label>

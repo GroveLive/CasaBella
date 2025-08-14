@@ -32,7 +32,7 @@
                         <td>${{ '%0.2f'|format(detalle.precio_unitario) }}</td>
                         <td>${{ '%0.2f'|format(detalle.cantidad * detalle.precio_unitario) }}</td>
                         <td>
-                            <a href="{{ url_for('main.eliminar_del_carrito', detalle_id=detalle.id_detalle_carrito) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                            <a href="{{ url_for('client.eliminar_del_carrito', detalle_id=detalle.id_detalle_carrito) }}" class="btn btn-danger btn-sm">Eliminar</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -45,7 +45,7 @@
                     </tr>
                 </tfoot>
             </table>
-            <a href="{{ url_for('main.finalizar_compra') }}" class="btn btn-success">Finalizar Compra</a>
+            <a href="{{ url_for('client.finalizar_compra') }}" class="btn btn-success">Finalizar Compra</a>
         {% else %}
             <p class="text-center">Tu carrito está vacío.</p>
         {% endif %}

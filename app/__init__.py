@@ -35,10 +35,16 @@ def create_app():
         return Usuario.query.get(int(user_id))
 
     # Registro de blueprints
+    from app.routes.home import bp as home_bp
+    app.register_blueprint(home_bp, url_prefix='/')  # Página principal
     from app.routes.auth import bp as auth_bp
-    app.register_blueprint(auth_bp)
-    from app.routes.main import bp as main_bp
-    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')  # Autenticación
+    from app.routes.client import bp as client_bp
+    app.register_blueprint(client_bp, url_prefix='/client')  # Cliente
+    from app.routes.admin import bp as admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')  # Admin
+    from app.routes.employee import bp as employee_bp
+    app.register_blueprint(employee_bp, url_prefix='/employee')  # Empleado
 
     # Importación de modelos dentro del contexto de la aplicación
     with app.app_context():

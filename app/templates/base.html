@@ -20,7 +20,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark shadow-sm border-bottom sticky-top">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home.index') }}">
                 <img src="{{ url_for('static', filename='images/casa-bella-logo.jpeg') }}" alt="Casa Bella" class="nav-logo-img rounded-circle me-2" width="60" height="60">
                 <span class="fw-bold text-primary d-none d-md-inline">Casa Bella</span>
             </a>
@@ -34,59 +34,59 @@
                     {% if current_user.is_authenticated %}
                         {% if current_user.rol == 'cliente' %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                                <a class="nav-link {% if request.endpoint == 'home.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.servicios' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.servicios') }}">Servicios</a>
+                                <a class="nav-link {% if request.endpoint == 'client.servicios' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('client.servicios') }}">Servicios</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.productos' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.productos') }}">Productos</a>
+                                <a class="nav-link {% if request.endpoint == 'client.productos' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('client.productos') }}">Productos</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.citas') }}">Reservar Cita</a>
+                                <a class="nav-link {% if request.endpoint == 'client.citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('client.citas') }}">Reservar Cita</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link fw-medium" href="#contacto">Contacto</a>
                             </li>
                         {% elif current_user.rol == 'admin' %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                                <a class="nav-link {% if request.endpoint == 'home.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.admin_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.admin_dashboard') }}">Panel Admin</a>
+                                <a class="nav-link {% if request.endpoint == 'admin.admin_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('admin.admin_dashboard') }}">Panel Admin</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link fw-medium" href="{{ url_for('main.gestion_usuarios') }}">Gestión Usuarios</a>
+                                <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_usuarios') }}">Gestión Usuarios</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link fw-medium" href="{{ url_for('main.gestion_productos') }}">Gestión Productos</a>
+                                <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_productos') }}">Gestión Productos</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link fw-medium" href="{{ url_for('main.gestion_servicios') }}">Gestión Servicios</a>
+                                <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_servicios') }}">Gestión Servicios</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link fw-medium" href="{{ url_for('main.gestion_citas_pendientes') }}">Citas Pendientes</a>
+                                <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_citas_pendientes') }}">Citas Pendientes</a>
                             </li>
                         {% elif current_user.rol == 'empleado' %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                                <a class="nav-link {% if request.endpoint == 'home.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.empleado_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.empleado_dashboard') }}">Panel Empleado</a>
+                                <a class="nav-link {% if request.endpoint == 'employee.empleado_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('employee.empleado_dashboard') }}">Panel Empleado</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'main.trabajar_citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.trabajar_citas') }}">Trabajar Citas</a>
+                                <a class="nav-link {% if request.endpoint == 'employee.trabajar_citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('employee.trabajar_citas') }}">Trabajar Citas</a>
                             </li>
                         {% endif %}
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.index') }}">Inicio</a>
+                            <a class="nav-link {% if request.endpoint == 'home.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.servicios' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.servicios') }}">Servicios</a>
+                            <a class="nav-link {% if request.endpoint == 'client.servicios' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('client.servicios') }}">Servicios</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.productos' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('main.productos') }}">Productos</a>
+                            <a class="nav-link {% if request.endpoint == 'client.productos' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('client.productos') }}">Productos</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link fw-medium" href="#contacto">Contacto</a>
@@ -128,9 +128,9 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.cliente_dashboard' if current_user.rol == 'cliente' else 'auth.admin_dashboard' if current_user.rol == 'admin' else 'auth.empleado_dashboard') }}"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('main.citas') }}"><i class="bi bi-calendar me-2"></i>Mis Citas</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('client.citas') }}"><i class="bi bi-calendar me-2"></i>Mis Citas</a></li>
                                 {% if current_user.rol == 'admin' %}
-                                <li class="admin-only"><a class="dropdown-item" href="{{ url_for('main.admin_dashboard') }}"><i class="bi bi-gear me-2"></i>Panel Admin</a></li>
+                                <li class="admin-only"><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}"><i class="bi bi-gear me-2"></i>Panel Admin</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item logout-btn" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
@@ -169,20 +169,20 @@
                 <div class="col-lg-2 col-md-6">
                     <h6 class="text-white fw-bold mb-3">Servicios</h6>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Manicure y Pedicure</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Cortes de Cabello</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Tratamientos Faciales</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.servicios') }}" class="text-light-emphasis text-decoration-none">Cuidado Personal</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.servicios') }}" class="text-light-emphasis text-decoration-none">Manicure y Pedicure</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.servicios') }}" class="text-light-emphasis text-decoration-none">Cortes de Cabello</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.servicios') }}" class="text-light-emphasis text-decoration-none">Tratamientos Faciales</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.servicios') }}" class="text-light-emphasis text-decoration-none">Cuidado Personal</a></li>
                     </ul>
                 </div>
                 
                 <div class="col-lg-2 col-md-6">
                     <h6 class="text-white fw-bold mb-3">Productos</h6>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Cosméticos</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Productos de Belleza</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Cuidado Personal</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.productos') }}" class="text-light-emphasis text-decoration-none">Accesorios</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.productos') }}" class="text-light-emphasis text-decoration-none">Cosméticos</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.productos') }}" class="text-light-emphasis text-decoration-none">Productos de Belleza</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.productos') }}" class="text-light-emphasis text-decoration-none">Cuidado Personal</a></li>
+                        <li class="mb-2"><a href="{{ url_for('client.productos') }}" class="text-light-emphasis text-decoration-none">Accesorios</a></li>
                     </ul>
                 </div>
                 

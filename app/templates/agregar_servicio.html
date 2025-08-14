@@ -13,7 +13,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('main.agregar_servicio') }}">
+        <form method="POST" action="{{ url_for('admin.agregar_servicio') }}">
             <div class="mb-3">
                 <label for="nombre" class="form-label">Nombre</label>
                 <input type="text" class="form-control" id="nombre" name="nombre" required>
@@ -43,7 +43,7 @@
                 <input type="text" class="form-control" id="imagen_url" name="imagen_url">
             </div>
             <button type="submit" class="btn btn-primary">Agregar Servicio</button>
-            <a href="{{ url_for('main.gestion_servicios') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('admin.gestion_servicios') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 {% endblock %}

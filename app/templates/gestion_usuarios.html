@@ -14,7 +14,7 @@
             {% endif %}
         {% endwith %}
         <div class="mb-3">
-            <a href="{{ url_for('main.agregar_usuario') }}" class="btn btn-primary">Agregar Nuevo Usuario</a>
+            <a href="{{ url_for('admin.agregar_usuario') }}" class="btn btn-primary">Agregar Nuevo Usuario</a>
         </div>
         <table class="table table-striped">
             <thead>
@@ -40,8 +40,8 @@
                     <td>{{ usuario.especialidad if usuario.especialidad else 'N/A' }}</td>
                     <td>{{ usuario.fecha_registro.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>
-                        <a href="{{ url_for('main.editar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="{{ url_for('main.eliminar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                        <a href="{{ url_for('admin.editar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{{ url_for('admin.eliminar_usuario', id_usuario=usuario.id_usuario) }}" class="btn btn-danger btn-sm">Eliminar</a>
                     </td>
                 </tr>
                 {% endfor %}

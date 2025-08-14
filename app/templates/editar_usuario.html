@@ -13,7 +13,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('main.editar_usuario', id_usuario=usuario.id_usuario) }}">
+        <form method="POST" action="{{ url_for('admin.editar_usuario', id_usuario=usuario.id_usuario) }}">
             <div class="mb-3">
                 <label for="nombre" class="form-label">Nombre</label>
                 <input type="text" class="form-control" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
@@ -43,7 +43,7 @@
                 <input type="text" class="form-control" id="especialidad" name="especialidad" value="{{ usuario.especialidad if usuario.especialidad else '' }}" {% if usuario.rol == 'empleado' %}required{% endif %}>
             </div>
             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-            <a href="{{ url_for('main.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('admin.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
         </form>
         <script>
             document.getElementById('rol').addEventListener('change', function() {

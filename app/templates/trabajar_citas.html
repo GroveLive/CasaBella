@@ -37,11 +37,11 @@
                         <td>{{ cita.notas|default('Sin notas', true) }}</td>
                         <td>
                             {% if cita.estado == 'pendiente' %}
-                                <form method="POST" action="{{ url_for('main.confirmar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
+                                <form method="POST" action="{{ url_for('employee.confirmar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
                                     <button type="submit" class="btn btn-success btn-sm me-2">Confirmar</button>
                                 </form>
                             {% elif cita.estado == 'confirmada' %}
-                                <form method="POST" action="{{ url_for('main.completar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
+                                <form method="POST" action="{{ url_for('employee.completar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
                                     <button type="submit" class="btn btn-primary btn-sm">Completar</button>
                                 </form>
                             {% else %}

@@ -14,9 +14,9 @@
             {% endif %}
         {% endwith %}
         <p>¿Estás seguro de que deseas eliminar el servicio "{{ servicio.nombre }}"?</p>
-        <form method="POST" action="{{ url_for('main.eliminar_servicio', id_servicio=servicio.id_servicio) }}">
+        <form method="POST" action="{{ url_for('admin.eliminar_servicio', id_servicio=servicio.id_servicio) }}">
             <button type="submit" class="btn btn-danger">Eliminar</button>
-            <a href="{{ url_for('main.gestion_servicios') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('admin.gestion_servicios') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 {% endblock %}

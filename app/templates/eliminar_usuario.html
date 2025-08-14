@@ -14,9 +14,9 @@
             {% endif %}
         {% endwith %}
         <p>¿Estás seguro de que deseas eliminar al usuario "{{ usuario.nombre }}"?</p>
-        <form method="POST" action="{{ url_for('main.eliminar_usuario', id_usuario=usuario.id_usuario) }}">
+        <form method="POST" action="{{ url_for('admin.eliminar_usuario', id_usuario=usuario.id_usuario) }}">
             <button type="submit" class="btn btn-danger">Eliminar</button>
-            <a href="{{ url_for('main.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('admin.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 {% endblock %}

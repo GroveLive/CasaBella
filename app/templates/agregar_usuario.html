@@ -13,7 +13,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('main.agregar_usuario') }}">
+        <form method="POST" action="{{ url_for('admin.agregar_usuario') }}">
             <div class="mb-3">
                 <label for="nombre" class="form-label">Nombre</label>
                 <input type="text" class="form-control" id="nombre" name="nombre" required>
@@ -43,7 +43,7 @@
                 <input type="text" class="form-control" id="especialidad" name="especialidad" required>
             </div>
             <button type="submit" class="btn btn-primary">Agregar Usuario</button>
-            <a href="{{ url_for('main.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('admin.gestion_usuarios') }}" class="btn btn-secondary">Cancelar</a>
         </form>
         <script>
             document.getElementById('rol').addEventListener('change', function() {

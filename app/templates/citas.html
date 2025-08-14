@@ -15,7 +15,7 @@
             {% endif %}
         {% endwith %}
         <div class="card border-0 shadow-sm p-4">
-            <form method="POST" action="{{ url_for('main.reservar_cita') }}" class="row g-3">
+            <form method="POST" action="{{ url_for('client.reservar_cita') }}" class="row g-3">
                 <div class="col-12">
                     <label for="servicio_id" class="form-label">Servicio</label>
                     <select class="form-select" id="servicio_id" name="servicio_id" required>

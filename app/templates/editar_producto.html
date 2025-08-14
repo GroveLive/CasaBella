@@ -13,7 +13,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('main.editar_producto', id_producto=producto.id_producto) }}">
+        <form method="POST" action="{{ url_for('admin.editar_producto', id_producto=producto.id_producto) }}">
             <div class="mb-3">
                 <label for="id_categoria" class="form-label">Categoría</label>
                 <select class="form-select" id="id_categoria" name="id_categoria" required>
@@ -62,7 +62,7 @@
                 <input type="url" class="form-control" id="imagen_url" name="imagen_url" value="{{ producto.imagen_url if producto.imagen_url else '' }}">
             </div>
             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-            <a href="{{ url_for('main.gestion_productos') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('admin.gestion_productos') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 {% endblock %}

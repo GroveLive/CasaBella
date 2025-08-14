@@ -14,7 +14,7 @@
             {% endif %}
         {% endwith %}
         <div class="mb-3">
-            <a href="{{ url_for('main.agregar_producto') }}" class="btn btn-primary">Agregar Nuevo Producto</a>
+            <a href="{{ url_for('admin.agregar_producto') }}" class="btn btn-primary">Agregar Nuevo Producto</a>
         </div>
         <table class="table table-striped">
             <thead>
@@ -46,8 +46,8 @@
                     <td>{{ producto.estado }}</td>
                     <td><a href="{{ producto.imagen_url }}" target="_blank">{{ producto.imagen_url|truncate(30, True) if producto.imagen_url else 'Sin imagen' }}</a></td>
                     <td>
-                        <a href="{{ url_for('main.editar_producto', id_producto=producto.id_producto) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="{{ url_for('main.eliminar_producto', id_producto=producto.id_producto) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                        <a href="{{ url_for('admin.editar_producto', id_producto=producto.id_producto) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{{ url_for('admin.eliminar_producto', id_producto=producto.id_producto) }}" class="btn btn-danger btn-sm">Eliminar</a>
                     </td>
                 </tr>
                 {% endfor %}

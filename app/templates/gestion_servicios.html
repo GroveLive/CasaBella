@@ -14,7 +14,7 @@
             {% endif %}
         {% endwith %}
         <div class="mb-3">
-            <a href="{{ url_for('main.agregar_servicio') }}" class="btn btn-primary">Agregar Nuevo Servicio</a>
+            <a href="{{ url_for('admin.agregar_servicio') }}" class="btn btn-primary">Agregar Nuevo Servicio</a>
         </div>
         <table class="table table-striped">
             <thead>
@@ -31,16 +31,15 @@
                 <tr>
                     <td>{{ servicio.id_servicio }}</td>
                     <td>{{ servicio.nombre }}</td>
-                    <td>{{ servicio.descripcion }}</td>
+                    <td>{{ servicio.descripción }}</td>
                     <td>${{ '%0.2f'|format(servicio.precio) }}</td>
                     <td>
-                        <a href="{{ url_for('main.editar_servicio', id_servicio=servicio.id_servicio) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="{{ url_for('main.eliminar_servicio', id_servicio=servicio.id_servicio) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                        <a href="{{ url_for('admin.editar_servicio', id_servicio=servicio.id_servicio) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{{ url_for('admin.eliminar_servicio', id_servicio=servicio.id_servicio) }}" class="btn btn-danger btn-sm">Eliminar</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    
 {% endblock %}
