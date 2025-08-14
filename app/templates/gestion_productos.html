@@ -20,10 +20,15 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Categoría</th>
                     <th>Nombre</th>
+                    <th>Descripción</th>
                     <th>Tipo</th>
                     <th>Precio</th>
                     <th>Stock</th>
+                    <th>Stock Mínimo</th>
+                    <th>Estado</th>
+                    <th>Imagen URL</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -31,10 +36,15 @@
                 {% for producto in productos %}
                 <tr>
                     <td>{{ producto.id_producto }}</td>
+                    <td>{{ producto.categoria.nombre if producto.categoria else 'Sin categoría' }}</td>
                     <td>{{ producto.nombre }}</td>
+                    <td>{{ producto.descripcion|truncate(50, True) if producto.descripcion else 'Sin descripción' }}</td>
                     <td>{{ producto.tipo }}</td>
                     <td>${{ '%0.2f'|format(producto.precio) }}</td>
                     <td>{{ producto.stock }}</td>
+                    <td>{{ producto.stock_minimo }}</td>
+                    <td>{{ producto.estado }}</td>
+                    <td><a href="{{ producto.imagen_url }}" target="_blank">{{ producto.imagen_url|truncate(30, True) if producto.imagen_url else 'Sin imagen' }}</a></td>
                     <td>
                         <a href="{{ url_for('main.editar_producto', id_producto=producto.id_producto) }}" class="btn btn-warning btn-sm">Editar</a>
                         <a href="{{ url_for('main.eliminar_producto', id_producto=producto.id_producto) }}" class="btn btn-danger btn-sm">Eliminar</a>

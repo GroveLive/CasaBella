@@ -9,6 +9,7 @@ from flask_login import login_required, current_user
 import logging
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
+from werkzeug.security import generate_password_hash
 
 bp = Blueprint('main', __name__)
 
@@ -134,6 +135,87 @@ def gestion_usuarios():
     usuarios = Usuario.query.all()
     return render_template('gestion_usuarios.html', usuarios=usuarios)
 
+@bp.route('/agregar_usuario', methods=['GET', 'POST'])
+@login_required
+def agregar_usuario():
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        email = request.form.get('email')
+        rol = request.form.get('rol')
+        contraseña = request.form.get('contraseña')
+        if not all([nombre, email, rol, contraseña]):
+            flash("Todos los campos son obligatorios.", "danger")
+            return render_template('agregar_usuario.html')
+        try:
+            usuario = Usuario(
+                nombre=nombre,
+                email=email,
+                rol=rol,
+                contraseña=generate_password_hash(contraseña)
+            )
+            db.session.add(usuario)
+            db.session.commit()
+            flash("Usuario agregado con éxito.", "success")
+            return redirect(url_for('main.gestion_usuarios'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: El email ya está en uso.", "danger")
+            return render_template('agregar_usuario.html')
+    return render_template('agregar_usuario.html')
+
+@bp.route('/editar_usuario/<int:id_usuario>', methods=['GET', 'POST'])
+@login_required
+def editar_usuario(id_usuario):
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.users import Usuario
+    usuario = Usuario.query.get_or_404(id_usuario)
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        email = request.form.get('email')
+        rol = request.form.get('rol')
+        contraseña = request.form.get('contraseña')
+        if not all([nombre, email, rol]):
+            flash("Los campos nombre, email y rol son obligatorios.", "danger")
+            return render_template('editar_usuario.html', usuario=usuario)
+        try:
+            usuario.nombre = nombre
+            usuario.email = email
+            usuario.rol = rol
+            if contraseña:
+                usuario.contraseña = generate_password_hash(contraseña)
+            db.session.commit()
+            flash("Usuario actualizado con éxito.", "success")
+            return redirect(url_for('main.gestion_usuarios'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: El email ya está en uso.", "danger")
+            return render_template('editar_usuario.html', usuario=usuario)
+    return render_template('editar_usuario.html', usuario=usuario)
+
+@bp.route('/eliminar_usuario/<int:id_usuario>', methods=['GET', 'POST'])
+@login_required
+def eliminar_usuario(id_usuario):
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.users import Usuario
+    usuario = Usuario.query.get_or_404(id_usuario)
+    if request.method == 'POST':
+        try:
+            db.session.delete(usuario)
+            db.session.commit()
+            flash("Usuario eliminado con éxito.", "success")
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: No se pudo eliminar el usuario, puede estar en uso.", "danger")
+        return redirect(url_for('main.gestion_usuarios'))
+    return render_template('eliminar_usuario.html', usuario=usuario)
+
 @bp.route('/gestion_productos')
 @login_required
 def gestion_productos():
@@ -141,8 +223,131 @@ def gestion_productos():
         flash("Acceso denegado. Solo para administradores.", "danger")
         return redirect(url_for('auth.login'))
     from app.models.productos import Producto
+    from app.models.categorias import Categoria
     productos = Producto.query.all()
-    return render_template('gestion_productos.html', productos=productos)
+    categorias = Categoria.query.all()
+    return render_template('gestion_productos.html', productos=productos, categorias=categorias)
+
+@bp.route('/agregar_producto', methods=['GET', 'POST'])
+@login_required
+def agregar_producto():
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.productos import Producto
+    from app.models.categorias import Categoria
+    if request.method == 'POST':
+        id_categoria = request.form.get('id_categoria')
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        tipo = request.form.get('tipo')
+        precio = request.form.get('precio')
+        stock = request.form.get('stock')
+        stock_minimo = request.form.get('stock_minimo')
+        estado = request.form.get('estado')
+        imagen_url = request.form.get('imagen_url')
+        if not all([id_categoria, nombre, tipo, precio, stock]):
+            flash("Los campos obligatorios (categoría, nombre, tipo, precio, stock) son requeridos.", "danger")
+            return render_template('agregar_producto.html', producto=None, categorias=Categoria.query.all())
+        try:
+            precio = float(precio)
+            stock = int(stock)
+            stock_minimo = int(stock_minimo) if stock_minimo else 5
+            if precio < 0 or stock < 0 or stock_minimo < 0:
+                flash("El precio, stock y stock mínimo no pueden ser negativos.", "danger")
+                return render_template('agregar_producto.html', producto=None, categorias=Categoria.query.all())
+            producto = Producto(
+                id_categoria=id_categoria,
+                nombre=nombre,
+                descripcion=descripcion,
+                tipo=tipo,
+                precio=precio,
+                stock=stock,
+                stock_minimo=stock_minimo,
+                estado=estado if estado else 'activo',
+                imagen_url=imagen_url
+            )
+            db.session.add(producto)
+            db.session.commit()
+            flash("Producto agregado con éxito.", "success")
+            return redirect(url_for('main.gestion_productos'))
+        except ValueError:
+            flash("El precio debe ser un número decimal y el stock/stock mínimo un número entero.", "danger")
+            return render_template('agregar_producto.html', producto=None, categorias=Categoria.query.all())
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: El producto ya existe o hay un problema de datos.", "danger")
+            return render_template('agregar_producto.html', producto=None, categorias=Categoria.query.all())
+    return render_template('agregar_producto.html', producto=None, categorias=Categoria.query.all())
+
+@bp.route('/editar_producto/<int:id_producto>', methods=['GET', 'POST'])
+@login_required
+def editar_producto(id_producto):
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.productos import Producto
+    from app.models.categorias import Categoria
+    producto = Producto.query.get_or_404(id_producto)
+    if request.method == 'POST':
+        id_categoria = request.form.get('id_categoria')
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        tipo = request.form.get('tipo')
+        precio = request.form.get('precio')
+        stock = request.form.get('stock')
+        stock_minimo = request.form.get('stock_minimo')
+        estado = request.form.get('estado')
+        imagen_url = request.form.get('imagen_url')
+        if not all([id_categoria, nombre, tipo, precio, stock]):
+            flash("Los campos obligatorios (categoría, nombre, tipo, precio, stock) son requeridos.", "danger")
+            return render_template('editar_producto.html', producto=producto, categorias=Categoria.query.all())
+        try:
+            precio = float(precio)
+            stock = int(stock)
+            stock_minimo = int(stock_minimo) if stock_minimo else producto.stock_minimo
+            if precio < 0 or stock < 0 or stock_minimo < 0:
+                flash("El precio, stock y stock mínimo no pueden ser negativos.", "danger")
+                return render_template('editar_producto.html', producto=producto, categorias=Categoria.query.all())
+            producto.id_categoria = id_categoria
+            producto.nombre = nombre
+            producto.descripcion = descripcion
+            producto.tipo = tipo
+            producto.precio = precio
+            producto.stock = stock
+            producto.stock_minimo = stock_minimo
+            producto.estado = estado if estado else producto.estado
+            producto.imagen_url = imagen_url
+            db.session.commit()
+            flash("Producto actualizado con éxito.", "success")
+            return redirect(url_for('main.gestion_productos'))
+        except ValueError:
+            flash("El precio debe ser un número decimal y el stock/stock mínimo un número entero.", "danger")
+            return render_template('editar_producto.html', producto=producto, categorias=Categoria.query.all())
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: No se pudo actualizar el producto.", "danger")
+            return render_template('editar_producto.html', producto=producto, categorias=Categoria.query.all())
+    return render_template('editar_producto.html', producto=producto, categorias=Categoria.query.all())
+
+@bp.route('/eliminar_producto/<int:id_producto>', methods=['GET', 'POST'])
+@login_required
+def eliminar_producto(id_producto):
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.productos import Producto
+    producto = Producto.query.get_or_404(id_producto)
+    if request.method == 'POST':
+        try:
+            db.session.delete(producto)
+            db.session.commit()
+            flash("Producto eliminado con éxito.", "success")
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: No se pudo eliminar el producto, puede estar en uso.", "danger")
+        return redirect(url_for('main.gestion_productos'))
+    return render_template('eliminar_producto.html', producto=producto)
 
 @bp.route('/gestion_servicios')
 @login_required
@@ -237,95 +442,6 @@ def completar_cita(id_cita):
     cita.estado = 'completada'
     db.session.commit()
     flash("Cita completada con éxito.", "success")
-    return redirect(url_for('main.trabajar_citas'))
-
-@bp.route('/agregar_usuario')
-@login_required
-def agregar_usuario():
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de agregar usuario en desarrollo.", "info")
-    return redirect(url_for('main.gestion_usuarios'))
-
-@bp.route('/editar_usuario/<int:id_usuario>')
-@login_required
-def editar_usuario(id_usuario):
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de editar usuario en desarrollo.", "info")
-    return redirect(url_for('main.gestion_usuarios'))
-
-@bp.route('/eliminar_usuario/<int:id_usuario>')
-@login_required
-def eliminar_usuario(id_usuario):
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de eliminar usuario en desarrollo.", "info")
-    return redirect(url_for('main.gestion_usuarios'))
-
-@bp.route('/agregar_producto')
-@login_required
-def agregar_producto():
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de agregar producto en desarrollo.", "info")
-    return redirect(url_for('main.gestion_productos'))
-
-@bp.route('/editar_producto/<int:id_producto>')
-@login_required
-def editar_producto(id_producto):
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de editar producto en desarrollo.", "info")
-    return redirect(url_for('main.gestion_productos'))
-
-@bp.route('/eliminar_producto/<int:id_producto>')
-@login_required
-def eliminar_producto(id_producto):
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de eliminar producto en desarrollo.", "info")
-    return redirect(url_for('main.gestion_productos'))
-
-@bp.route('/agregar_servicio')
-@login_required
-def agregar_servicio():
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de agregar servicio en desarrollo.", "info")
-    return redirect(url_for('main.gestion_servicios'))
-
-@bp.route('/editar_servicio/<int:id_servicio>')
-@login_required
-def editar_servicio(id_servicio):
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de editar servicio en desarrollo.", "info")
-    return redirect(url_for('main.gestion_servicios'))
-
-@bp.route('/eliminar_servicio/<int:id_servicio>')
-@login_required
-def eliminar_servicio(id_servicio):
-    if current_user.rol != 'admin':
-        flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
-    flash("Función de eliminar servicio en desarrollo.", "info")
-    return redirect(url_for('main.gestion_servicios'))
-
-@bp.route('/gestion_citas')
-@login_required
-def gestion_citas():
-    if current_user.rol != 'empleado':
-        flash("Acceso denegado. Solo para empleados.", "danger")
-        return redirect(url_for('auth.login'))
     return redirect(url_for('main.trabajar_citas'))
 
 @bp.route('/reservar_cita', methods=['POST'])

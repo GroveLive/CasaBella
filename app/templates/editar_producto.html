@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Editar Producto - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_productos.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Editar Producto</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('main.editar_producto', id_producto=producto.id_producto) }}">
+            <div class="mb-3">
+                <label for="id_categoria" class="form-label">Categoría</label>
+                <select class="form-select" id="id_categoria" name="id_categoria" required>
+                    {% for categoria in categorias %}
+                        <option value="{{ categoria.id_categoria }}" {% if categoria.id_categoria == producto.id_categoria %}selected{% endif %}>{{ categoria.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ producto.nombre }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <textarea class="form-control" id="descripcion" name="descripcion">{{ producto.descripcion if producto.descripcion else '' }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="tipo" class="form-label">Tipo</label>
+                <select class="form-select" id="tipo" name="tipo" required>
+                    <option value="cosmético" {% if producto.tipo == 'cosmético' %}selected{% endif %}>Cosmético</option>
+                    <option value="joya" {% if producto.tipo == 'joya' %}selected{% endif %}>Joya</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="precio" class="form-label">Precio</label>
+                <input type="number" step="0.01" class="form-control" id="precio" name="precio" value="{{ producto.precio }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="stock" class="form-label">Stock</label>
+                <input type="number" class="form-control" id="stock" name="stock" value="{{ producto.stock }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="stock_minimo" class="form-label">Stock Mínimo</label>
+                <input type="number" class="form-control" id="stock_minimo" name="stock_minimo" value="{{ producto.stock_minimo }}">
+            </div>
+            <div class="mb-3">
+                <label for="estado" class="form-label">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="activo" {% if producto.estado == 'activo' %}selected{% endif %}>Activo</option>
+                    <option value="inactivo" {% if producto.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                    <option value="en_promocion" {% if producto.estado == 'en_promocion' %}selected{% endif %}>En Promoción</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="imagen_url" class="form-label">URL de Imagen</label>
+                <input type="url" class="form-control" id="imagen_url" name="imagen_url" value="{{ producto.imagen_url if producto.imagen_url else '' }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{{ url_for('main.gestion_productos') }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}
