@@ -373,6 +373,110 @@ def gestion_servicios():
     servicios = Servicio.query.all()
     return render_template('gestion_servicios.html', servicios=servicios)
 
+@bp.route('/agregar_servicio', methods=['GET', 'POST'])
+@login_required
+def agregar_servicio():
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        precio = request.form.get('precio')
+        duracion = request.form.get('duracion')
+        estado = request.form.get('estado')
+        imagen_url = request.form.get('imagen_url')
+        if not all([nombre, precio, duracion]):
+            flash("Los campos obligatorios (nombre, precio, duración) son requeridos.", "danger")
+            return render_template('agregar_servicio.html')
+        try:
+            precio = float(precio)
+            duracion = int(duracion)
+            if precio < 0 or duracion <= 0:
+                flash("El precio no puede ser negativo y la duración debe ser mayor a 0.", "danger")
+                return render_template('agregar_servicio.html')
+            servicio = Servicio(
+                nombre=nombre,
+                descripcion=descripcion,
+                precio=precio,
+                duracion=duracion,
+                estado=estado if estado else 'activo',
+                imagen_url=imagen_url
+            )
+            db.session.add(servicio)
+            db.session.commit()
+            flash("Servicio agregado con éxito.", "success")
+            return redirect(url_for('main.gestion_servicios'))
+        except ValueError:
+            flash("El precio debe ser un número decimal y la duración un número entero.", "danger")
+            return render_template('agregar_servicio.html')
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: Ya existe un servicio con ese nombre.", "danger")
+            return render_template('agregar_servicio.html')
+    return render_template('agregar_servicio.html')
+
+@bp.route('/editar_servicio/<int:id_servicio>', methods=['GET', 'POST'])
+@login_required
+def editar_servicio(id_servicio):
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.servicios import Servicio
+    servicio = Servicio.query.get_or_404(id_servicio)
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+        precio = request.form.get('precio')
+        duracion = request.form.get('duracion')
+        estado = request.form.get('estado')
+        imagen_url = request.form.get('imagen_url')
+        if not all([nombre, precio, duracion]):
+            flash("Los campos obligatorios (nombre, precio, duración) son requeridos.", "danger")
+            return render_template('editar_servicio.html', servicio=servicio)
+        try:
+            precio = float(precio)
+            duracion = int(duracion)
+            if precio < 0 or duracion <= 0:
+                flash("El precio no puede ser negativo y la duración debe ser mayor a 0.", "danger")
+                return render_template('editar_servicio.html', servicio=servicio)
+            servicio.nombre = nombre
+            servicio.descripcion = descripcion
+            servicio.precio = precio
+            servicio.duracion = duracion
+            servicio.estado = estado if estado else servicio.estado
+            servicio.imagen_url = imagen_url
+            db.session.commit()
+            flash("Servicio actualizado con éxito.", "success")
+            return redirect(url_for('main.gestion_servicios'))
+        except ValueError:
+            flash("El precio debe ser un número decimal y la duración un número entero.", "danger")
+            return render_template('editar_servicio.html', servicio=servicio)
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: Ya existe un servicio con ese nombre.", "danger")
+            return render_template('editar_servicio.html', servicio=servicio)
+    return render_template('editar_servicio.html', servicio=servicio)
+
+@bp.route('/eliminar_servicio/<int:id_servicio>', methods=['GET', 'POST'])
+@login_required
+def eliminar_servicio(id_servicio):
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    from app.models.servicios import Servicio
+    servicio = Servicio.query.get_or_404(id_servicio)
+    if request.method == 'POST':
+        try:
+            db.session.delete(servicio)
+            db.session.commit()
+            flash("Servicio eliminado con éxito.", "success")
+        except IntegrityError:
+            db.session.rollback()
+            flash("Error: No se pudo eliminar el servicio, puede estar en uso.", "danger")
+        return redirect(url_for('main.gestion_servicios'))
+    return render_template('eliminar_servicio.html', servicio=servicio)
+
 @bp.route('/gestion_citas_pendientes')
 @login_required
 def gestion_citas_pendientes():
