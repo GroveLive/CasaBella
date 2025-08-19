@@ -19,7 +19,7 @@ def empleado_dashboard():
         return redirect(url_for('auth.login'))
     citas_asignadas_count = Cita.query.filter_by(id_empleado=current_user.id_usuario, estado='pendiente').count()
     citas_pendientes_count = Cita.query.filter_by(estado='pendiente').count()
-    return render_template('empleado_dashboard.html', citas_asignadas_count=citas_asignadas_count, citas_pendientes_count=citas_pendientes_count)
+    return render_template('dashboard_empleado.html', citas_asignadas_count=citas_asignadas_count, citas_pendientes_count=citas_pendientes_count)
 
 @bp.route('/trabajar_citas')
 @login_required
