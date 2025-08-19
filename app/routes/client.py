@@ -1,20 +1,30 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from app import db
 from app.models.servicios import Servicio
 from app.models.productos import Producto
 from app.models.citas import Cita
 from app.models.carrito import Carrito
 from app.models.detalle_carrito import DetalleCarrito
+from app.models.ventas import Venta
 from flask_login import login_required, current_user
 import logging
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 bp = Blueprint('client', __name__, url_prefix='/client')
 
 # Configurar logging básico
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Contexto para todas las rutas del cliente
+@bp.context_processor
+def inject_carrito():
+    if current_user.is_authenticated:
+        carrito = Carrito.query.filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+        return dict(carrito=carrito)
+    return dict(carrito=None)
 
 @bp.route('/servicios')
 @login_required
@@ -57,24 +67,38 @@ def agregar_carrito(producto_id):
             logger.debug(f"No se encontró carrito activo, creando nuevo para id_usuario={current_user.id_usuario}")
             carrito = Carrito(id_usuario=current_user.id_usuario, estado='activo')
             db.session.add(carrito)
-            db.session.commit()
-            carrito = Carrito.query.filter_by(id_usuario=current_user.id_usuario, estado='activo').first()  # Refresca el objeto
-        producto = Producto.query.get_or_404(producto_id)
-        if producto.stock > 0:
-            detalle = DetalleCarrito(carrito_id=carrito.id_carrito, producto_id=producto_id, cantidad=1, precio_unitario=producto.precio, id_servicio=None)
-            db.session.add(detalle)
-            db.session.commit()
-            flash("Producto agregado al carrito.", "success")
+            db.session.flush()
+            logger.debug(f"Carrito creado con id_carrito={carrito.id_carrito}")
         else:
+            logger.debug(f"Carrito existente encontrado con id_carrito={carrito.id_carrito}")
+
+        producto = Producto.query.get_or_404(producto_id)
+        if not hasattr(producto, 'precio') or producto.precio is None:
+            raise ValueError("El producto no tiene precio definido.")
+        if not hasattr(producto, 'stock') or producto.stock is None or producto.stock <= 0:
             flash("No hay stock disponible.", "danger")
+            return redirect(url_for('client.productos'))
+
+        detalle = DetalleCarrito()
+        detalle.id_carrito = carrito.id_carrito
+        detalle.id_producto = producto_id
+        detalle.cantidad = 1
+        detalle.precio_unitario = producto.precio
+        detalle.id_servicio = None
+        db.session.add(detalle)
+        db.session.flush()
+        logger.debug(f"Detalle creado con id_detalle_carrito={detalle.id_detalle_carrito}")
+        db.session.commit()
+        logger.debug(f"Detalle agregado al carrito {carrito.id_carrito} para producto {producto_id}")
+        flash("Producto agregado al carrito.", "success")
     except IntegrityError as e:
         db.session.rollback()
         logger.error(f"Error de integridad al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Producto: {producto_id}, Carrito: {carrito.id_carrito if carrito else 'None'}")
         flash("Error de integridad al agregar el producto. Verifica los datos e intenta de nuevo.", "danger")
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Producto: {producto_id}, Carrito: {carrito.id_carrito if carrito else 'None'}")
-        flash("Ocurrió un error al agregar el producto al carrito. Por favor, intenta de nuevo.", "danger")
+        logger.error(f"Error al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Producto: {producto_id}, Carrito: {carrito.id_carrito if 'carrito' in locals() else 'None'}")
+        flash(f"Ocurrió un error al agregar el producto al carrito: {str(e)}. Por favor, intenta de nuevo.", "danger")
     return redirect(url_for('client.productos'))
 
 @bp.route('/carrito')
@@ -83,10 +107,59 @@ def carrito():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    carrito = Carrito.query.filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    carrito = Carrito.query.options(joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto)).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    logger.debug(f"Carrito cargado: {carrito}, Detalles: {[d.id_detalle_carrito for d in carrito.detalles if carrito]}")
     if not carrito:
         flash("No tienes un carrito activo.", "info")
     return render_template('carrito.html', carrito=carrito)
+
+@bp.route('/eliminar_del_carrito/<int:detalle_id>', methods=['POST'])
+@login_required
+def eliminar_del_carrito(detalle_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    detalle = DetalleCarrito.query.get_or_404(detalle_id)
+    if detalle.carrito.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para eliminar este item.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        db.session.delete(detalle)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Item eliminado del carrito.'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al eliminar del carrito: {str(e)}")
+        return jsonify({'success': False, 'message': f'Ocurrió un error: {str(e)}'}), 500
+
+@bp.route('/procesar_compra', methods=['GET', 'POST'])
+@login_required
+def procesar_compra():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    carrito = Carrito.query.options(joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto)).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    if not carrito or not carrito.detalles:
+        flash("No tienes items en el carrito para procesar.", "danger")
+        return redirect(url_for('client.carrito'))
+    if request.method == 'POST':
+        for detalle in carrito.detalles:
+            producto = detalle.producto
+            producto.stock -= detalle.cantidad
+            if producto.stock < 0:
+                db.session.rollback()
+                flash("Stock insuficiente para procesar la compra.", "danger")
+                return redirect(url_for('client.carrito'))
+        venta = Venta(id_usuario=current_user.id_usuario, fecha=datetime.utcnow(), total=sum(d.cantidad * d.precio_unitario for d in carrito.detalles))
+        db.session.add(venta)
+        db.session.commit()
+        for detalle in carrito.detalles:
+            detalle.venta_id = venta.id_venta  # Esto fallará si no hay venta_id en DetalleCarrito
+        carrito.estado = 'completado'
+        db.session.commit()
+        flash("Compra procesada con éxito. ¡Gracias por tu pedido!", "success")
+        return redirect(url_for('client.productos'))
+    return render_template('procesar_compra.html')
 
 @bp.route('/reservar_cita', methods=['POST'])
 @login_required

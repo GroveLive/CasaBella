@@ -99,6 +99,19 @@
                         <i class="bi bi-moon-stars"></i>
                     </button>
                     
+                    <!-- Carrito para rol 'cliente' -->
+                    {% if current_user.is_authenticated and current_user.rol == 'cliente' %}
+                        <a href="{{ url_for('client.carrito') }}" class="btn btn-outline-light position-relative me-2">
+                            <i class="bi bi-cart"></i>
+                            {% if carrito and carrito.detalle_carrito %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ carrito.detalle_carrito|length }}
+                                    <span class="visually-hidden">items en el carrito</span>
+                                </span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
+                    
                     <!-- Guest Navigation -->
                     {% if not current_user.is_authenticated %}
                     <div class="guest-nav">

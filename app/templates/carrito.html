@@ -5,7 +5,7 @@
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Tu Carrito</h1>
+        <h1 class="mb-4">Mi Carrito</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -14,6 +14,7 @@
             {% endif %}
         {% endwith %}
         {% if carrito and carrito.detalles %}
+            {% set total = 0 %}
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -26,28 +27,40 @@
                 </thead>
                 <tbody>
                     {% for detalle in carrito.detalles %}
-                    <tr>
-                        <td>{{ detalle.producto.nombre }}</td>
-                        <td>{{ detalle.cantidad }}</td>
-                        <td>${{ '%0.2f'|format(detalle.precio_unitario) }}</td>
-                        <td>${{ '%0.2f'|format(detalle.cantidad * detalle.precio_unitario) }}</td>
-                        <td>
-                            <a href="{{ url_for('client.eliminar_del_carrito', detalle_id=detalle.id_detalle_carrito) }}" class="btn btn-danger btn-sm">Eliminar</a>
-                        </td>
-                    </tr>
+                        {% set producto = detalle.producto %}
+                        {% set subtotal = detalle.cantidad * detalle.precio_unitario %}
+                        {% set total = total + subtotal %}
+                        <tr data-detalle-id="{{ detalle.id_detalle_carrito }}">
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>${{ '%.2f'|format(detalle.precio_unitario) }}</td>
+                            <td>${{ '%.2f'|format(subtotal) }}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="eliminarItem({{ detalle.id_detalle_carrito }})">Eliminar</button>
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="3"><strong>Total</strong></td>
-                        <td><strong>${{ '%0.2f'|format(carrito.detalles|sum(attribute='cantidad * precio_unitario')) }}</strong></td>
+                        <td><strong>${{ '%.2f'|format(total) }}</strong></td>
                         <td></td>
                     </tr>
                 </tfoot>
             </table>
-            <a href="{{ url_for('client.finalizar_compra') }}" class="btn btn-success">Finalizar Compra</a>
+            <a href="{{ url_for('client.procesar_compra') }}" class="btn btn-success">Proceder al Pago</a>
         {% else %}
-            <p class="text-center">Tu carrito está vacío.</p>
+            <p class="text-info">Tu carrito está vacío.</p>
+            <a href="{{ url_for('client.productos') }}" class="btn btn-primary">Volver a Productos</a>
         {% endif %}
     </div>
+{% endblock %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            actualizarTotal();
+        });
+    </script>
 {% endblock %}
