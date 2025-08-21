@@ -1,0 +1,9 @@
+# Fdb version 4
+["pdflatex"] 0 "factura.tex" "factura.pdf" "factura" 0 -1
+  "factura.aux" 0 -1 0 "pdflatex"
+  "factura.tex" 0 -1 0 ""
+  (generated)
+  "factura.aux"
+  "factura.log"
+  "factura.pdf"
+  (rewritten before read)

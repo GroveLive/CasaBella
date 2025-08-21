@@ -7,13 +7,16 @@ from app.models.carrito import Carrito
 from app.models.detalle_carrito import DetalleCarrito
 from app.models.ventas import Venta
 from app.models.detalle_ventas import DetalleVenta
+from app.models.pagos import Pago
+from app.models.inventario_movimientos import InventarioMovimiento
 from flask_login import login_required, current_user
 import logging
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 import os
-import subprocess
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 bp = Blueprint('client', __name__, url_prefix='/client')
 
@@ -166,6 +169,7 @@ def procesar_compra():
             db.session.commit()
 
             # Crear detalles de venta basados en el carrito
+            detalles_venta = []
             for detalle in carrito.detalles:
                 detalle_venta = DetalleVenta(
                     id_venta=venta.id_venta,
@@ -175,6 +179,24 @@ def procesar_compra():
                     precio_unitario=detalle.precio_unitario
                 )
                 db.session.add(detalle_venta)
+                detalles_venta.append(detalle_venta)
+
+            # Crear registro de pago
+            metodo_pago = request.form.get('metodo_pago')
+            if not metodo_pago:
+                raise ValueError("Debe seleccionar un método de pago.")
+            pago = Pago(id_venta=venta.id_venta, metodo_pago=metodo_pago, monto=total)
+            db.session.add(pago)
+
+            # Crear movimientos de inventario
+            for detalle in carrito.detalles:
+                movimiento = InventarioMovimiento(
+                    id_producto=detalle.id_producto,
+                    tipo_movimiento='salida',
+                    cantidad=detalle.cantidad,
+                    motivo=f'Venta ID: {venta.id_venta}'
+                )
+                db.session.add(movimiento)
 
             # Actualizar estado del carrito y eliminar detalles
             carrito.estado = 'completado'
@@ -182,29 +204,41 @@ def procesar_compra():
                 db.session.delete(detalle)
             db.session.commit()
 
-            # Generar factura en LaTeX
-            latex_content = generate_factura_latex(carrito, venta)
-            with open('factura.tex', 'w') as f:
-                f.write(latex_content)
-            # Verificar si latexmk está disponible
-            if subprocess.run(['which', 'latexmk'], capture_output=True, text=True).returncode != 0:
-                logger.error("latexmk no está instalado o no está en el PATH")
-                raise Exception("latexmk no está instalado. Instala TeX Live con 'sudo apt install texlive-full'.")
-            # Capturar la salida de latexmk
-            result = subprocess.run(['latexmk', '-pdf', 'factura.tex'], capture_output=True, text=True)
-            if result.returncode != 0:
-                logger.error(f"Error al ejecutar latexmk. Salida: {result.stderr}")
-                with open('factura.tex', 'r') as f:
-                    logger.error(f"Contenido de factura.tex: {f.read()}")
-                raise Exception("Fallo al generar el PDF con LaTeX")
+            # Generar factura con reportlab
+            nombre_archivo = f'factura_{current_user.id_usuario}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+            ruta_archivo = os.path.join(os.path.dirname(__file__), nombre_archivo)
+            c = canvas.Canvas(ruta_archivo, pagesize=letter)
+            c.setFont("Helvetica", 12)
+
+            c.drawString(50, 750, "🛒 Casa Bella")
+            c.drawString(50, 730, f"Cliente: {current_user.nombre}")
+            c.drawString(50, 710, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
+            y = 690
+
+            c.drawString(50, y, "Productos:")
+            y -= 20
+            for detalle in detalles_venta:
+                producto = Producto.query.get(detalle.id_producto)
+                if producto:
+                    subtotal = detalle.cantidad * detalle.precio_unitario
+                    c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
+                    y -= 20
+
+            c.drawString(50, y-10, "-------------------------")
+            c.drawString(50, y-30, f"TOTAL: ${total:.2f}")
+            c.drawString(50, y-50, "¡Gracias por su compra!")
+            c.save()
+
+            # Verificar que el archivo existe antes de enviarlo
+            if not os.path.exists(ruta_archivo):
+                raise FileNotFoundError(f"El archivo {ruta_archivo} no se creó correctamente.")
+
             # Enviar el PDF como descarga
-            from flask import send_file
             flash("Compra procesada con éxito. Descargando factura...", "success")
-            response = send_file('factura.pdf', as_attachment=True, attachment_filename=f'factura_{current_user.id_usuario}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf')
-            # Eliminar archivos temporales después de enviar
-            for file in ['factura.tex', 'factura.log', 'factura.aux', 'factura.pdf']:
-                if os.path.exists(file):
-                    os.remove(file)
+            response = send_file(ruta_archivo, as_attachment=True, download_name=nombre_archivo)
+            # Eliminar el archivo temporal después de enviar
+            if os.path.exists(ruta_archivo):
+                os.remove(ruta_archivo)
             return response
         except Exception as e:
             db.session.rollback()
@@ -213,11 +247,116 @@ def procesar_compra():
             return redirect(url_for('client.carrito'))
     return render_template('procesar_compra.html', carrito=carrito)
 
-# Función auxiliar para generar el contenido LaTeX de la factura
+@bp.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    # Obtener historial de compras
+    ventas = Venta.query.filter_by(id_usuario=current_user.id_usuario).options(
+        joinedload(Venta.detalles).joinedload(DetalleVenta.producto)
+    ).all()
+    # Obtener historial de citas
+    citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).all()
+    return render_template('dashboard.html', ventas=ventas, citas=citas)
+
+@bp.route('/descargar_factura/<int:venta_id>', methods=['GET'])
+@login_required
+def descargar_factura(venta_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    venta = Venta.query.get_or_404(venta_id)
+    if venta.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para descargar esta factura.", "danger")
+        return redirect(url_for('client.dashboard'))
+    try:
+        total = venta.total
+        detalles_venta = DetalleVenta.query.filter_by(id_venta=venta_id).options(joinedload(DetalleVenta.producto)).all()
+
+        nombre_archivo = f'factura_{current_user.id_usuario}_{venta_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        ruta_archivo = os.path.join(os.path.dirname(__file__), nombre_archivo)
+        c = canvas.Canvas(ruta_archivo, pagesize=letter)
+        c.setFont("Helvetica", 12)
+
+        c.drawString(50, 750, "🛒 Casa Bella")
+        c.drawString(50, 730, f"Cliente: {current_user.nombre}")
+        c.drawString(50, 710, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
+        y = 690
+
+        c.drawString(50, y, "Productos:")
+        y -= 20
+        for detalle in detalles_venta:
+            producto = detalle.producto
+            if producto:
+                subtotal = detalle.cantidad * detalle.precio_unitario
+                c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
+                y -= 20
+
+        c.drawString(50, y-10, "-------------------------")
+        c.drawString(50, y-30, f"TOTAL: ${total:.2f}")
+        c.drawString(50, y-50, "¡Gracias por su compra!")
+        c.save()
+
+        if not os.path.exists(ruta_archivo):
+            raise FileNotFoundError(f"El archivo {ruta_archivo} no se creó correctamente.")
+
+        flash("Descargando factura...", "success")
+        response = send_file(ruta_archivo, as_attachment=True, download_name=nombre_archivo)
+        if os.path.exists(ruta_archivo):
+            os.remove(ruta_archivo)
+        return response
+    except Exception as e:
+        logger.error(f"Error al descargar factura: {str(e)}")
+        flash(f"Ocurrió un error al descargar la factura: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('client.dashboard'))
+
+@bp.route('/borrar_compra/<int:venta_id>', methods=['POST'])
+@login_required
+def borrar_compra(venta_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    venta = Venta.query.get_or_404(venta_id)
+    if venta.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para borrar esta compra.", "danger")
+        return redirect(url_for('client.dashboard'))
+    try:
+        DetalleVenta.query.filter_by(id_venta=venta_id).delete()
+        db.session.delete(venta)
+        db.session.commit()
+        flash("Compra eliminada con éxito.", "success")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al borrar compra: {str(e)}")
+        flash(f"Ocurrió un error al borrar la compra: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.dashboard'))
+
+@bp.route('/borrar_cita/<int:cita_id>', methods=['POST'])
+@login_required
+def borrar_cita(cita_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    cita = Cita.query.get_or_404(cita_id)
+    if cita.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para borrar esta cita.", "danger")
+        return redirect(url_for('client.dashboard'))
+    try:
+        db.session.delete(cita)
+        db.session.commit()
+        flash("Cita eliminada con éxito.", "success")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al borrar cita: {str(e)}")
+        flash(f"Ocurrió un error al borrar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.dashboard'))
+
+# Función auxiliar para generar el contenido LaTeX de la factura (mantendremos por ahora, pero no se usará)
 def generate_factura_latex(carrito, venta):
     detalles = carrito.detalles
     total = sum(d.cantidad * d.precio_unitario for d in detalles)
-    # Construir las líneas de la tabla dinámicamente
     table_rows = []
     for detalle in detalles:
         row = f"{detalle.producto.nombre} & {detalle.cantidad} & ${detalle.precio_unitario:.2f} & ${detalle.cantidad * detalle.precio_unitario:.2f} \\\\"

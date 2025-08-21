@@ -1,20 +1,80 @@
 {% extends "base.html" %}
-{% block title %}Dashboard Cliente - Casa Bella{% endblock %}
+{% block title %}Dashboard - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Bienvenido, {{ user.nombre }} (Cliente)</h1>
-        <h2 class="mb-3">Mis Citas</h2>
-        <ul class="list-group">
-            {% for cita in citas %}
-                <li class="list-group-item">{{ cita.fecha_hora }} - {{ cita.estado }}</li>
-            {% endfor %}
-        </ul>
-        <h2 class="mb-3 mt-4">Mis Compras</h2>
-        <ul class="list-group">
-            {% for venta in ventas %}
-                <li class="list-group-item">{{ venta.fecha_venta }} - Total: ${{ venta.total }}</li>
-            {% endfor %}
-        </ul>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger mt-4">Cerrar Sesión</a>
+        <h1 class="mb-4">Dashboard de {{ current_user.nombre }}</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Historial de Compras -->
+        <h2 class="mt-4">Historial de Compras</h2>
+        {% if ventas %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID Venta</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                        <tr>
+                            <td>{{ venta.id_venta }}</td>
+                            <td>{{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>${{ '%.2f'|format(venta.total) }}</td>
+                            <td>
+                                <a href="{{ url_for('client.descargar_factura', venta_id=venta.id_venta) }}" class="btn btn-primary btn-sm">Descargar Factura</a>
+                                <form method="POST" action="{{ url_for('client.borrar_compra', venta_id=venta.id_venta) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de borrar esta compra?');">Borrar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-info">No tienes compras registradas.</p>
+        {% endif %}
+
+        <!-- Historial de Citas -->
+        <h2 class="mt-4">Historial de Citas</h2>
+        {% if citas %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID Cita</th>
+                        <th>Fecha y Hora</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cita in citas %}
+                        <tr>
+                            <td>{{ cita.id_cita }}</td>
+                            <td>{{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ cita.estado }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('client.borrar_cita', cita_id=cita.id_cita) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de borrar esta cita?');">Borrar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-info">No tienes citas registradas.</p>
+        {% endif %}
     </div>
 {% endblock %}

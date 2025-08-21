@@ -45,6 +45,15 @@
                 </tfoot>
             </table>
             <form method="POST" action="{{ url_for('client.procesar_compra') }}">
+                <div class="mb-3">
+                    <label for="metodo_pago" class="form-label">Método de Pago</label>
+                    <select class="form-select" id="metodo_pago" name="metodo_pago" required>
+                        <option value="">Selecciona un método</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-success">Confirmar Compra y Generar Factura</button>
             </form>
         {% else %}
