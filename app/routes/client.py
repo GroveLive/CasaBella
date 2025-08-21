@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
 from app import db
 from app.models.servicios import Servicio
 from app.models.productos import Producto
@@ -6,11 +6,14 @@ from app.models.citas import Cita
 from app.models.carrito import Carrito
 from app.models.detalle_carrito import DetalleCarrito
 from app.models.ventas import Venta
+from app.models.detalle_ventas import DetalleVenta
 from flask_login import login_required, current_user
 import logging
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from sqlalchemy.orm import joinedload
+import os
+import subprocess
 
 bp = Blueprint('client', __name__, url_prefix='/client')
 
@@ -108,7 +111,11 @@ def carrito():
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
     carrito = Carrito.query.options(joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto)).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
-    logger.debug(f"Carrito cargado: {carrito}, Detalles: {[d.id_detalle_carrito for d in carrito.detalles if carrito]}")
+    logger.debug(f"Carrito cargado: {carrito}")
+    if carrito:
+        logger.debug(f"Detalles: {[d.id_detalle_carrito for d in carrito.detalles]}")
+    else:
+        logger.debug("No se encontró carrito activo")
     if not carrito:
         flash("No tienes un carrito activo.", "info")
     return render_template('carrito.html', carrito=carrito)
@@ -143,23 +150,120 @@ def procesar_compra():
         flash("No tienes items en el carrito para procesar.", "danger")
         return redirect(url_for('client.carrito'))
     if request.method == 'POST':
-        for detalle in carrito.detalles:
-            producto = detalle.producto
-            producto.stock -= detalle.cantidad
-            if producto.stock < 0:
-                db.session.rollback()
-                flash("Stock insuficiente para procesar la compra.", "danger")
-                return redirect(url_for('client.carrito'))
-        venta = Venta(id_usuario=current_user.id_usuario, fecha=datetime.utcnow(), total=sum(d.cantidad * d.precio_unitario for d in carrito.detalles))
-        db.session.add(venta)
-        db.session.commit()
-        for detalle in carrito.detalles:
-            detalle.venta_id = venta.id_venta  # Esto fallará si no hay venta_id en DetalleCarrito
-        carrito.estado = 'completado'
-        db.session.commit()
-        flash("Compra procesada con éxito. ¡Gracias por tu pedido!", "success")
-        return redirect(url_for('client.productos'))
-    return render_template('procesar_compra.html')
+        try:
+            # Verificar y actualizar stock
+            for detalle in carrito.detalles:
+                producto = detalle.producto
+                producto.stock -= detalle.cantidad
+                if producto.stock < 0:
+                    db.session.rollback()
+                    flash("Stock insuficiente para procesar la compra.", "danger")
+                    return redirect(url_for('client.carrito'))
+            # Crear la venta
+            total = sum(d.cantidad * d.precio_unitario for d in carrito.detalles)
+            venta = Venta(id_usuario=current_user.id_usuario, fecha_venta=datetime.utcnow(), total=total)
+            db.session.add(venta)
+            db.session.commit()
+
+            # Crear detalles de venta basados en el carrito
+            for detalle in carrito.detalles:
+                detalle_venta = DetalleVenta(
+                    id_venta=venta.id_venta,
+                    id_producto=detalle.id_producto,
+                    id_servicio=detalle.id_servicio if detalle.id_servicio else None,
+                    cantidad=detalle.cantidad,
+                    precio_unitario=detalle.precio_unitario
+                )
+                db.session.add(detalle_venta)
+
+            # Actualizar estado del carrito y eliminar detalles
+            carrito.estado = 'completado'
+            for detalle in carrito.detalles:
+                db.session.delete(detalle)
+            db.session.commit()
+
+            # Generar factura en LaTeX
+            latex_content = generate_factura_latex(carrito, venta)
+            with open('factura.tex', 'w') as f:
+                f.write(latex_content)
+            # Verificar si latexmk está disponible
+            if subprocess.run(['which', 'latexmk'], capture_output=True, text=True).returncode != 0:
+                logger.error("latexmk no está instalado o no está en el PATH")
+                raise Exception("latexmk no está instalado. Instala TeX Live con 'sudo apt install texlive-full'.")
+            # Capturar la salida de latexmk
+            result = subprocess.run(['latexmk', '-pdf', 'factura.tex'], capture_output=True, text=True)
+            if result.returncode != 0:
+                logger.error(f"Error al ejecutar latexmk. Salida: {result.stderr}")
+                with open('factura.tex', 'r') as f:
+                    logger.error(f"Contenido de factura.tex: {f.read()}")
+                raise Exception("Fallo al generar el PDF con LaTeX")
+            # Enviar el PDF como descarga
+            from flask import send_file
+            flash("Compra procesada con éxito. Descargando factura...", "success")
+            response = send_file('factura.pdf', as_attachment=True, attachment_filename=f'factura_{current_user.id_usuario}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf')
+            # Eliminar archivos temporales después de enviar
+            for file in ['factura.tex', 'factura.log', 'factura.aux', 'factura.pdf']:
+                if os.path.exists(file):
+                    os.remove(file)
+            return response
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error al procesar la compra: {str(e)}")
+            flash(f"Ocurrió un error al procesar la compra: {str(e)}. Por favor, intenta de nuevo.", "danger")
+            return redirect(url_for('client.carrito'))
+    return render_template('procesar_compra.html', carrito=carrito)
+
+# Función auxiliar para generar el contenido LaTeX de la factura
+def generate_factura_latex(carrito, venta):
+    detalles = carrito.detalles
+    total = sum(d.cantidad * d.precio_unitario for d in detalles)
+    # Construir las líneas de la tabla dinámicamente
+    table_rows = []
+    for detalle in detalles:
+        row = f"{detalle.producto.nombre} & {detalle.cantidad} & ${detalle.precio_unitario:.2f} & ${detalle.cantidad * detalle.precio_unitario:.2f} \\\\"
+        table_rows.append(row)
+    table_content = '\n'.join(table_rows)
+
+    return f"""\\documentclass[a4paper,12pt]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage{{geometry}}
+\\geometry{{a4paper, margin=1in}}
+\\usepackage{{booktabs}}
+\\usepackage{{longtable}}
+\\usepackage{{fancyhdr}}
+\\pagestyle{{fancy}}
+\\fancyhf{{}}
+\\fancyhead[L]{{Factura - Casa Bella}}
+\\fancyfoot[C]{{Página \\thepage}}
+\\usepackage{{amiri}} % Fuente para soporte de caracteres no latinos
+
+\\begin{{document}}
+
+\\begin{{center}}
+\\textbf{{Factura}} \\\\
+\\textbf{{Casa Bella}} \\\\
+Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')} \\\\
+Cliente: {current_user.nombre} (ID: {current_user.id_usuario}) \\\\
+\\end{{center}}
+
+\\begin{{longtable}}{{lccr}}
+\\toprule
+Producto & Cantidad & Precio Unitario & Subtotal \\\\
+\\midrule
+\\endhead
+\\midrule
+\\multicolumn{{4}}{{r}}{{Continúa en la siguiente página}} \\\\
+\\endfoot
+\\bottomrule
+\\endlastfoot
+{table_content}
+\\midrule
+\\multicolumn{{3}}{{r}}{{Total}} & ${total:.2f} \\\\
+\\bottomrule
+\\end{{longtable}}
+
+\\end{{document}}
+""".replace('\n', '')
 
 @bp.route('/reservar_cita', methods=['POST'])
 @login_required

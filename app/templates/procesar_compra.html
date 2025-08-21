@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Procesar Compra - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/procesar_compra.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Procesar Compra</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% if carrito and carrito.detalles %}
+            {% set total = 0 %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in carrito.detalles %}
+                        {% set producto = detalle.producto %}
+                        {% set subtotal = detalle.cantidad * detalle.precio_unitario %}
+                        {% set total = total + subtotal %}
+                        <tr>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>${{ '%.2f'|format(detalle.precio_unitario) }}</td>
+                            <td>${{ '%.2f'|format(subtotal) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"><strong>Total</strong></td>
+                        <td><strong>${{ '%.2f'|format(total) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <form method="POST" action="{{ url_for('client.procesar_compra') }}">
+                <button type="submit" class="btn btn-success">Confirmar Compra y Generar Factura</button>
+            </form>
+        {% else %}
+            <p class="text-info">No tienes items en el carrito para procesar.</p>
+            <a href="{{ url_for('client.productos') }}" class="btn btn-primary">Volver a Productos</a>
+        {% endif %}
+    </div>
+{% endblock %}
