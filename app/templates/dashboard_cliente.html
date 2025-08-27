@@ -14,6 +14,36 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Sección de Perfil -->
+        <h2 class="mt-4">Mi Perfil</h2>
+        <form method="POST" action="{{ url_for('client.perfil') }}" class="mb-4">
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ current_user.nombre }}" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+            </div>
+            <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <input type="text" class="form-control" id="telefono" name="telefono" value="{{ current_user.telefono or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="contraseña">Nueva Contraseña (dejar en blanco para no cambiar)</label>
+                <input type="password" class="form-control" id="contraseña" name="contraseña">
+            </div>
+            <p><strong>Rol:</strong> {{ current_user.rol }} (No editable)</p>
+            <p><strong>Especialidad:</strong> {{ current_user.especialidad or 'N/A' }} (No editable)</p>
+            <p><strong>Fecha de Registro:</strong> {{ current_user.fecha_registro.strftime('%Y-%m-%d %H:%M') }} (No editable)</p>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </form>
+
+        <!-- Formulario separado para borrar perfil -->
+        <form method="POST" action="{{ url_for('client.borrar_perfil') }}" class="mt-2" style="display:inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de borrar tu perfil? Esto te desconectará.');">Borrar Perfil</button>
+        </form>
+
         <!-- Historial de Compras -->
         <h2 class="mt-4">Historial de Compras</h2>
         {% if ventas %}

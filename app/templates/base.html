@@ -46,6 +46,9 @@
                                 <a class="nav-link {% if request.endpoint == 'client.citas' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('client.citas') }}">Reservar Cita</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'auth.cliente_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('auth.cliente_dashboard') }}">Dashboard Cliente</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link fw-medium" href="#contacto">Contacto</a>
                             </li>
                         {% elif current_user.rol == 'admin' %}

@@ -66,7 +66,6 @@ def cliente_dashboard():
         flash("Acceso denegado.", "danger")
         return redirect(url_for('auth.login'))
     return render_template("dashboard_cliente.html", user=current_user, citas=current_user.citas_cliente, ventas=current_user.ventas, reseñas=current_user.reseñas, notificaciones=current_user.notificaciones)
-
 @bp.route('/dashboard/admin')
 @login_required
 def admin_dashboard():

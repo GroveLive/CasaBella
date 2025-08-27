@@ -236,13 +236,6 @@
     </section>
 
     {% block scripts %}
-    <script>
-        // Redirigir si el usuario está logueado
-        document.addEventListener('DOMContentLoaded', () => {
-            {% if current_user.is_authenticated %}
-                window.location.href = '{{ url_for("auth.cliente_dashboard" if current_user.rol == "cliente" else "auth.admin_dashboard" if current_user.rol == "admin" else "auth.empleado_dashboard") }}';
-            {% endif %}
-        });
-    </script>
+    <!-- No redirección automática -->
     {% endblock %}
 {% endblock %}
