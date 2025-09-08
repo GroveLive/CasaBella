@@ -15,16 +15,27 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from sqlalchemy.orm import joinedload
+from werkzeug.security import check_password_hash, generate_password_hash
+from decimal import Decimal
 import os
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from werkzeug.security import check_password_hash, generate_password_hash
+from reportlab.lib.utils import ImageReader
+from reportlab.graphics.shapes import Circle
+from reportlab.graphics import renderPDF
+from reportlab.lib.colors import white
+from reportlab.platypus import SimpleDocTemplate
+from PIL import Image, ImageDraw
+import io
 
 bp = Blueprint('client', __name__, url_prefix='/client')
 
 # Configurar logging básico
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# IVA (16% como estándar, ajustable)
+IVA_RATE = Decimal("0.16")
 
 # Contexto para todas las rutas del cliente
 @bp.context_processor
@@ -242,7 +253,9 @@ def procesar_compra():
                         producto.stock -= detalle.cantidad
 
             # Crear la venta
-            total = sum(d.cantidad * d.precio_unitario for d in carrito.detalles if d.id_producto or d.id_servicio)
+            subtotal = sum(Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario)) for detalle in carrito.detalles if detalle.id_producto or detalle.id_servicio)
+            iva = subtotal * IVA_RATE
+            total = subtotal + iva
             venta = Venta(id_usuario=current_user.id_usuario, fecha_venta=datetime.utcnow(), total=total)
             db.session.add(venta)
             db.session.commit()
@@ -285,36 +298,91 @@ def procesar_compra():
                 db.session.delete(detalle)
             db.session.commit()
 
-            # Generar factura con reportlab
+            # Generar factura con ReportLab
             nombre_archivo = f'factura_{current_user.id_usuario}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
-            ruta_archivo = os.path.join(os.path.dirname(__file__), nombre_archivo)
+            ruta_archivo = os.path.join(os.path.dirname(__file__), '..', 'static', nombre_archivo)
             c = canvas.Canvas(ruta_archivo, pagesize=letter)
-            c.setFont("Helvetica", 12)
+            c.setFont("Helvetica-Bold", 16)
 
-            c.drawString(50, 750, "🛒 Casa Bella")
-            c.drawString(50, 730, f"Cliente: {current_user.nombre}")
-            c.drawString(50, 710, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
-            y = 690
+            # Logo circular con tamaño ajustado
+            logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
+            if os.path.exists(logo_path):
+                # Create circular clipped image
+                def create_circular_image(image_path, size=80):
+                    img = Image.open(image_path)
+                    img = img.convert("RGBA")
+                    img.thumbnail((size, size), Image.Resampling.LANCZOS)
+                    mask = Image.new('L', (size, size), 0)
+                    draw = ImageDraw.Draw(mask)
+                    draw.ellipse((0, 0, size, size), fill=255)
+                    output = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+                    output.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
+                    output.putalpha(mask)
+                    img_buffer = io.BytesIO()
+                    output.save(img_buffer, format='PNG')
+                    img_buffer.seek(0)
+                    return img_buffer
+                
+                circular_logo = create_circular_image(logo_path, 80)
+                logo_x = 50
+                logo_y = 720
+                logo_size = 80
+                c.drawImage(ImageReader(circular_logo), logo_x, logo_y, logo_size, logo_size)
 
-            c.drawString(50, y, "Productos/Servicios:")
-            y -= 20
+            c.setFont("Helvetica-Bold", 18)
+            c.drawString(150, 760, "Casa Bella")
+            c.setFont("Helvetica", 14)
+            c.drawString(150, 740, "Salón de Belleza y Distribuidora")
+            
+            c.setStrokeColorRGB(0.2, 0.4, 0.8)
+            c.setLineWidth(2)
+            c.line(50, 710, 550, 710)
+
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, 680, "FACTURA")
+            c.setFont("Helvetica", 10)
+            c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
+            
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(50, 660, "DATOS DEL CLIENTE:")
+            c.setFont("Helvetica", 10)
+            c.drawString(50, 645, f"Nombre: {current_user.nombre}")
+            c.drawString(50, 630, f"Email: {current_user.email or 'No proporcionado'}")
+            c.drawString(50, 615, f"Teléfono: {current_user.telefono or 'No proporcionado'}")
+
+            y = 580
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(50, y, "PRODUCTOS/SERVICIOS:")
+            c.setStrokeColorRGB(0.8, 0.8, 0.8)
+            c.line(50, y-5, 550, y-5)
+            
+            y -= 25
+            c.setFont("Helvetica", 9)
+
             for detalle in detalles_venta:
                 if detalle.id_producto:
                     producto = Producto.query.get(detalle.id_producto)
                     if producto:
-                        subtotal = detalle.cantidad * detalle.precio_unitario
-                        c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
+                        subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                        c.drawString(60, y, f"{producto.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
                         y -= 20
                 elif detalle.id_servicio:
                     servicio = Servicio.query.get(detalle.id_servicio)
                     if servicio:
-                        subtotal = detalle.cantidad * detalle.precio_unitario
-                        c.drawString(60, y, f"{servicio.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
+                        subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                        c.drawString(60, y, f"{servicio.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
                         y -= 20
 
-            c.drawString(50, y-10, "-------------------------")
-            c.drawString(50, y-30, f"TOTAL: ${total:.2f}")
-            c.drawString(50, y-50, "¡Gracias por su compra!")
+            c.drawString(50, y-10, "─" * 70)
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(400, y-30, f"Subtotal: ${subtotal.quantize(Decimal('0.01'))}")
+            c.drawString(400, y-45, f"IVA (16%): ${iva.quantize(Decimal('0.01'))}")
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(400, y-65, f"TOTAL: ${total.quantize(Decimal('0.01'))}")
+            
+            c.setFont("Helvetica-Oblique", 10)
+            c.drawString(50, y-100, "¡Gracias por confiar en Casa Bella!")
+            c.drawString(50, y-115, "Tu belleza es nuestra pasión")
             c.save()
 
             if not os.path.exists(ruta_archivo):
@@ -427,38 +495,98 @@ def descargar_factura(venta_id):
         flash("No tienes permiso para descargar esta factura.", "danger")
         return redirect(url_for('client.dashboard'))
     try:
-        total = venta.total if venta.total else 0.00  # Manejar caso donde total pueda ser NULL
+        total = venta.total if venta.total else Decimal('0.00')
         detalles_venta = DetalleVenta.query.filter_by(id_venta=venta_id).options(joinedload(DetalleVenta.producto)).all()
+        subtotal = sum(Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario)) for detalle in detalles_venta)
+        iva = subtotal * IVA_RATE
 
         nombre_archivo = f'factura_{current_user.id_usuario}_{venta_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
-        ruta_archivo = os.path.join(os.path.dirname(__file__), nombre_archivo)
+        ruta_archivo = os.path.join(os.path.dirname(__file__), '..', 'static', nombre_archivo)
         c = canvas.Canvas(ruta_archivo, pagesize=letter)
-        c.setFont("Helvetica", 12)
+        c.setFont("Helvetica-Bold", 16)
 
-        c.drawString(50, 750, "🛒 Casa Bella")
-        c.drawString(50, 730, f"Cliente: {current_user.nombre}")
-        c.drawString(50, 710, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha'}")
-        y = 690
+        # Logo circular con tamaño ajustado
+        logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
+        if os.path.exists(logo_path):
+            # Create circular clipped image (same function as above)
+            def create_circular_image(image_path, size=80):
+                img = Image.open(image_path)
+                img = img.convert("RGBA")
+                img.thumbnail((size, size), Image.Resampling.LANCZOS)
+                
+                mask = Image.new('L', (size, size), 0)
+                draw = ImageDraw.Draw(mask)
+                draw.ellipse((0, 0, size, size), fill=255)
+                
+                output = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+                output.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
+                output.putalpha(mask)
+                
+                img_buffer = io.BytesIO()
+                output.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                return img_buffer
+            
+            circular_logo = create_circular_image(logo_path, 80)
+            logo_x = 50
+            logo_y = 720
+            logo_size = 80
+            c.drawImage(ImageReader(circular_logo), logo_x, logo_y, logo_size, logo_size)
 
-        c.drawString(50, y, "Productos/Servicios:")
-        y -= 20
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(150, 760, "Casa Bella")
+        c.setFont("Helvetica", 14)
+        c.drawString(150, 740, "Salón de Belleza y Distribuidora")
+        
+        c.setStrokeColorRGB(0.2, 0.4, 0.8)
+        c.setLineWidth(2)
+        c.line(50, 710, 550, 710)
+
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, 680, "FACTURA")
+        c.setFont("Helvetica", 10)
+        c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha'}")
+        
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, 660, "DATOS DEL CLIENTE:")
+        c.setFont("Helvetica", 10)
+        c.drawString(50, 645, f"Nombre: {current_user.nombre}")
+        c.drawString(50, 630, f"Email: {current_user.email or 'No proporcionado'}")
+        c.drawString(50, 615, f"Teléfono: {current_user.telefono or 'No proporcionado'}")
+
+        y = 580
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "PRODUCTOS/SERVICIOS:")
+        c.setStrokeColorRGB(0.8, 0.8, 0.8)
+        c.line(50, y-5, 550, y-5)
+        
+        y -= 25
+        c.setFont("Helvetica", 9)
+
         for detalle in detalles_venta:
             if detalle.id_producto:
                 producto = detalle.producto
                 if producto:
-                    subtotal = detalle.cantidad * detalle.precio_unitario
-                    c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
+                    subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                    c.drawString(60, y, f"{producto.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
                     y -= 20
             elif detalle.id_servicio:
                 servicio = Servicio.query.get(detalle.id_servicio)
                 if servicio:
-                    subtotal = detalle.cantidad * detalle.precio_unitario
-                    c.drawString(60, y, f"{servicio.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
+                    subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                    c.drawString(60, y, f"{servicio.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
                     y -= 20
 
-        c.drawString(50, y-10, "-------------------------")
-        c.drawString(50, y-30, f"TOTAL: ${total:.2f}")
-        c.drawString(50, y-50, "¡Gracias por su compra!")
+        c.drawString(50, y-10, "─" * 70)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(400, y-30, f"Subtotal: ${subtotal.quantize(Decimal('0.01'))}")
+        c.drawString(400, y-45, f"IVA (16%): ${iva.quantize(Decimal('0.01'))}")
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(400, y-65, f"TOTAL: ${total.quantize(Decimal('0.01'))}")
+        
+        c.setFont("Helvetica-Oblique", 10)
+        c.drawString(50, y-100, "¡Gracias por confiar en Casa Bella!")
+        c.drawString(50, y-115, "Tu belleza es nuestra pasión")
         c.save()
 
         if not os.path.exists(ruta_archivo):
@@ -518,18 +646,18 @@ def borrar_cita(cita_id):
 # Función auxiliar para generar el contenido LaTeX de la factura (mantendremos por ahora, pero no se usará)
 def generate_factura_latex(carrito, venta):
     detalles = carrito.detalles
-    total = sum(d.cantidad * d.precio_unitario for d in detalles if d.id_producto or d.id_servicio)
+    total = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles if d.id_producto or d.id_servicio)
     table_rows = []
     for detalle in detalles:
         if detalle.id_producto:
             producto = Producto.query.get(detalle.id_product)
             if producto:
-                row = f"{producto.nombre} & {detalle.cantidad or 0} & ${detalle.precio_unitario or 0:.2f} & ${(detalle.cantidad or 0) * (detalle.precio_unitario or 0):.2f} \\\\"
+                row = f"{producto.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
                 table_rows.append(row)
         elif detalle.id_servicio:
             servicio = Servicio.query.get(detalle.id_servicio)
             if servicio:
-                row = f"{servicio.nombre} & {detalle.cantidad or 0} & ${detalle.precio_unitario or 0:.2f} & ${(detalle.cantidad or 0) * (detalle.precio_unitario or 0):.2f} \\\\"
+                row = f"{servicio.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
                 table_rows.append(row)
     table_content = '\n'.join(table_rows)
 
@@ -567,7 +695,7 @@ Producto/Servicio & Cantidad & Precio Unitario & Subtotal \\\\
 \\endlastfoot
 {table_content}
 \\midrule
-\\multicolumn{{3}}{{r}}{{Total}} & ${total:.2f} \\\\
+\\multicolumn{{3}}{{r}}{{Total}} & ${total.quantize(Decimal('0.01'))} \\\\
 \\bottomrule
 \\end{{longtable}}
 
