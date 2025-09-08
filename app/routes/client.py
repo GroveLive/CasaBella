@@ -709,15 +709,59 @@ def reservar_cita():
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
     servicio_id = request.form.get('servicio_id')
-    fecha_hora = request.form.get('fecha_hora')
+    fecha_hora_str = request.form.get('fecha_hora')
     if not current_user.is_authenticated or not current_user.id_usuario:
         flash("Error: Usuario no autenticado correctamente.", "danger")
         return redirect(url_for('auth.login'))
+
     try:
+        # Convertir fecha_hora a objeto datetime
+        fecha_hora = datetime.strptime(fecha_hora_str, '%Y-%m-%dT%H:%M')
+
+        # Definir horarios del salón
+        horarios = {
+            0: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Lunes
+            1: {'inicio': datetime.strptime('08:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Martes
+            2: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Miércoles
+            3: None,  # Jueves (CERRADO)
+            4: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Viernes
+            5: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Sábado
+            6: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('18:00', '%H:%M').time()}   # Domingo
+        }
+
+        # Obtener el día de la semana (0 = Lunes, 6 = Domingo)
+        dia_semana = fecha_hora.weekday()
+
+        # Verificar si el día está cerrado
+        if horarios[dia_semana] is None:
+            flash("Hora o día no disponible en el horario. El salón está cerrado este día (Jueves).", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Obtener el horario del día
+        horario_dia = horarios[dia_semana]
+        hora_solicitada = fecha_hora.time()
+
+        # Verificar si la hora está dentro del rango permitido
+        if hora_solicitada < horario_dia['inicio'] or hora_solicitada > horario_dia['fin']:
+            flash("Hora o día no disponible en el horario. Por favor, selecciona una hora dentro del rango permitido.", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Verificar incrementos de 30 minutos (opcional, ajustable)
+        minutos = hora_solicitada.minute
+        if minutos % 30 != 0:
+            flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos (e.g., 9:00, 9:30).", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Verificar si la cita es en el pasado
+        if fecha_hora < datetime.now():
+            flash("No puedes reservar citas en el pasado.", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Crear la cita
         cita = Cita(
             id_usuario=current_user.id_usuario,
             id_servicio=servicio_id,
-            fecha_hora=datetime.strptime(fecha_hora, '%Y-%m-%dT%H:%M'),
+            fecha_hora=fecha_hora,
             estado='pendiente'
         )
         db.session.add(cita)

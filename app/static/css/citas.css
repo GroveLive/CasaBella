@@ -1,33 +1,4 @@
-
-[data-theme] .card {
-    background: var(--card-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 25px;
-    box-shadow: var(--shadow-glam);
-    transition: all 0.6s ease;
-}
-
-[data-theme] .card:hover {
-    transform: translateY(-10px);
-}
-
-[data-theme] .form-select,
-[data-theme] .form-control {
-    background: var(--card-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 15px;
-    transition: all 0.5s ease;
-    color: var(--text-primary) !important; /* Asegurar texto legible */
-}
-
-[data-theme] .form-select:focus,
-[data-theme] .form-control:focus {
-    border-color: var(--secondary-color);
-    box-shadow: 0 0 0 0.4rem rgba(59, 130, 246, 0.5);
-    transform: scale(1.01);
-}
-
-/* Tablas de horarios */
+/* citas.css - Añadir o ajustar */
 [data-theme] table {
     width: 100%;
     border-collapse: separate;
@@ -36,30 +7,25 @@
     color: var(--text-primary) !important;
 }
 
-[data-theme="light"] table {
-    background: var(--card-bg);
-    color: var(--text-primary) !important;
-}
-
 [data-theme] th,
 [data-theme] td {
     border: 1px solid var(--border-color);
-    padding: 1rem;
-    text-align: center;
-    color: var(--text-primary) !important;
-}
-
-[data-theme="light"] th,
-[data-theme="light"] td {
+    padding: 0.75rem; /* Ajuste para mejor espaciado */
+    text-align: left; /* Alinear a la izquierda para mejor legibilidad */
     color: var(--text-primary) !important;
 }
 
 [data-theme] th {
     background: var(--gradient-primary);
-    color: var(--text-primary) !important;
+    color: var(--text-on-gradient) !important; /* Asegura contraste en gradiente */
 }
 
+[data-theme] td {
+    vertical-align: middle; /* Centrar verticalmente el contenido */
+}
+
+/* Ajuste para tema claro si es necesario */
 [data-theme="light"] th {
     background: var(--gradient-primary);
-    color: var(--text-primary) !important;
+    color: var(--text-on-gradient) !important;
 }

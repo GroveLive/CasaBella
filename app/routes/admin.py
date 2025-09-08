@@ -5,6 +5,9 @@ from app.models.productos import Producto
 from app.models.categorias import Categoria
 from app.models.servicios import Servicio
 from app.models.citas import Cita
+from app.models.asignaciones import Asignacion
+from sqlalchemy.exc import IntegrityError
+from werkzeug.security import generate_password_hash
 from app.models.inventario_movimientos import InventarioMovimiento
 from flask_login import login_required, current_user
 import logging
@@ -413,53 +416,84 @@ def gestion_ingresos():
     start_month = today.replace(day=1)
     start_year = today.replace(month=1, day=1)
 
-    # Ingresos por productos (desde InventarioMovimiento - solo salidas)
-    ingresos_productos = {
-        'hoy': 0.0,
-        'semana': 0.0,
-        'mes': 0.0,
-        'ano': 0.0
-    }
-    movimientos = InventarioMovimiento.query.join(Producto).filter(
-        InventarioMovimiento.tipo_movimiento == 'salida'
-    ).all()
-    for movimiento in movimientos:
-        producto = movimiento.producto
-        if producto and producto.precio is not None:
-            fecha_movimiento = movimiento.fecha_movimiento.date()
-            ingreso = abs(movimiento.cantidad) * float(producto.precio)  # Usamos abs para manejar cantidades negativas si las hay
-            logger.debug(f"Movimiento: {movimiento.id_movimiento}, Cantidad: {movimiento.cantidad}, Precio: {producto.precio}, Ingreso: {ingreso}, Fecha: {fecha_movimiento}")
-            if fecha_movimiento == today:
-                ingresos_productos['hoy'] += ingreso
-            if start_week <= fecha_movimiento <= today:
-                ingresos_productos['semana'] += ingreso
-            if start_month <= fecha_movimiento <= today:
-                ingresos_productos['mes'] += ingreso
-            if start_year <= fecha_movimiento <= today:
-                ingresos_productos['ano'] += ingreso
+    # Calcular ingresos por productos con join explícito
+    try:
+        ingresos_productos = {
+            'hoy': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
+                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .filter(InventarioMovimiento.tipo_movimiento == 'salida')
+                .filter(func.date(InventarioMovimiento.fecha_movimiento) == today)
+                .scalar() or 0.0,
+            'semana': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
+                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .filter(InventarioMovimiento.tipo_movimiento == 'salida')
+                .filter(func.date(InventarioMovimiento.fecha_movimiento).between(start_week, today))
+                .scalar() or 0.0,
+            'mes': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
+                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .filter(InventarioMovimiento.tipo_movimiento == 'salida')
+                .filter(func.date(InventarioMovimiento.fecha_movimiento).between(start_month, today))
+                .scalar() or 0.0,
+            'ano': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
+                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .filter(InventarioMovimiento.tipo_movimiento == 'salida')
+                .filter(func.date(InventarioMovimiento.fecha_movimiento).between(start_year, today))
+                .scalar() or 0.0
+        }
+    except Exception as e:
+        logger.error(f"Error al calcular ingresos por productos: {str(e)}")
+        ingresos_productos = {'hoy': 0.0, 'semana': 0.0, 'mes': 0.0, 'ano': 0.0}
 
-    # Ingresos por servicios (desde citas completadas)
-    ingresos_servicios = {
-        'hoy': 0.0,
-        'semana': 0.0,
-        'mes': 0.0,
-        'ano': 0.0
-    }
-    citas_completadas = Cita.query.filter_by(estado='completada').all()
-    for cita in citas_completadas:
-        fecha_cita = cita.fecha_hora.date()
-        ingreso = cita.servicio.precio if cita.servicio and cita.servicio.precio else 0.0
-        if fecha_cita == today:
-            ingresos_servicios['hoy'] += ingreso
-        if start_week <= fecha_cita <= today:
-            ingresos_servicios['semana'] += ingreso
-        if start_month <= fecha_cita <= today:
-            ingresos_servicios['mes'] += ingreso
-        if start_year <= fecha_cita <= today:
-            ingresos_servicios['ano'] += ingreso
+    # Calcular ingresos por servicios con join explícito
+    try:
+        ingresos_servicios = {
+            'hoy': db.session.query(func.sum(Servicio.precio))
+                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .filter(Cita.estado == 'completada')
+                .filter(func.date(Cita.fecha_hora) == today)
+                .scalar() or 0.0,
+            'semana': db.session.query(func.sum(Servicio.precio))
+                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .filter(Cita.estado == 'completada')
+                .filter(func.date(Cita.fecha_hora).between(start_week, today))
+                .scalar() or 0.0,
+            'mes': db.session.query(func.sum(Servicio.precio))
+                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .filter(Cita.estado == 'completada')
+                .filter(func.date(Cita.fecha_hora).between(start_month, today))
+                .scalar() or 0.0,
+            'ano': db.session.query(func.sum(Servicio.precio))
+                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .filter(Cita.estado == 'completada')
+                .filter(func.date(Cita.fecha_hora).between(start_year, today))
+                .scalar() or 0.0
+        }
+    except Exception as e:
+        logger.error(f"Error al calcular ingresos por servicios: {str(e)}")
+        ingresos_servicios = {'hoy': 0.0, 'semana': 0.0, 'mes': 0.0, 'ano': 0.0}
 
-    logger.debug(f"Ingresos productos: {ingresos_productos}")
-    logger.debug(f"Ingresos servicios: {ingresos_servicios}")
+    # Determinar el tipo de filtro
+    tipo_filtro = request.args.get('tipo_filtro', 'total')
+    titulo_grafica = "Ingresos Totales"
+    if tipo_filtro == 'productos':
+        ingresos = ingresos_productos
+        titulo_grafica = "Ingresos por Productos"
+    elif tipo_filtro == 'servicios':
+        ingresos = ingresos_servicios
+        titulo_grafica = "Ingresos por Servicios"
+    else:  # total
+        ingresos = {
+            'hoy': ingresos_productos['hoy'] + ingresos_servicios['hoy'],
+            'semana': ingresos_productos['semana'] + ingresos_servicios['semana'],
+            'mes': ingresos_productos['mes'] + ingresos_servicios['mes'],
+            'ano': ingresos_productos['ano'] + ingresos_servicios['ano']
+        }
+        titulo_grafica = "Ingresos Totales"
+
+    logger.debug(f"Tipo de filtro: {tipo_filtro}, Ingresos: {ingresos}")
+
     return render_template('gestion_ingresos.html', 
+                          ingresos=ingresos, 
                           ingresos_productos=ingresos_productos, 
-                          ingresos_servicios=ingresos_servicios)
+                          ingresos_servicios=ingresos_servicios, 
+                          titulo_grafica=titulo_grafica)
