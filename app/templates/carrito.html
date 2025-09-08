@@ -5,54 +5,72 @@
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Mi Carrito</h1>
+        <h1 class="mb-5 text-center text-secondary">Mi Carrito</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
         {% if carrito and carrito.detalles %}
             {% set total = 0 %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio Unitario</th>
-                        <th>Subtotal</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for detalle in carrito.detalles %}
-                        {% set producto = detalle.producto %}
-                        {% set subtotal = detalle.cantidad * detalle.precio_unitario %}
-                        {% set total = total + subtotal %}
-                        <tr data-detalle-id="{{ detalle.id_detalle_carrito }}">
-                            <td>{{ producto.nombre }}</td>
-                            <td>{{ detalle.cantidad }}</td>
-                            <td>${{ '%.2f'|format(detalle.precio_unitario) }}</td>
-                            <td>${{ '%.2f'|format(subtotal) }}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" onclick="eliminarItem({{ detalle.id_detalle_carrito }})">Eliminar</button>
-                            </td>
+            <div class="cart-table-wrapper">
+                <table class="table cart-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Producto</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-center">Precio Unitario</th>
+                            <th class="text-center">Subtotal</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3"><strong>Total</strong></td>
-                        <td><strong>${{ '%.2f'|format(total) }}</strong></td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-            <a href="{{ url_for('client.procesar_compra') }}" class="btn btn-success">Proceder al Pago</a>
+                    </thead>
+                    <tbody>
+                        {% for detalle in carrito.detalles %}
+                            {% set producto = detalle.producto %}
+                            {% set servicio = detalle.servicio %}
+                            {% set precio_unitario = detalle.precio_unitario if detalle.precio_unitario is not none else 0.00 %}
+                            {% set cantidad = detalle.cantidad if detalle.cantidad is not none else 0 %}
+                            {% set subtotal = cantidad * precio_unitario %}
+                            {% set total = total + subtotal %}
+                            <tr data-detalle-id="{{ detalle.id_detalle_carrito }}" class="cart-item">
+                                <td class="text-start">{{ producto.nombre if producto else (servicio.nombre if servicio else 'Item no identificado') }}</td>
+                                <td class="text-center">
+                                    <div class="quantity-control">
+                                        <button class="btn btn-sm btn-secondary decrement" data-id="{{ detalle.id_detalle_carrito }}">-</button>
+                                        <span class="cantidad" data-id="{{ detalle.id_detalle_carrito }}">{{ cantidad }}</span>
+                                        <button class="btn btn-sm btn-secondary increment" data-id="{{ detalle.id_detalle_carrito }}">+</button>
+                                    </div>
+                                </td>
+                                <td class="text-center precio-unitario">${{ '%.2f'|format(precio_unitario) }}</td>
+                                <td class="text-center subtotal" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(subtotal) }}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-danger btn-sm" onclick="eliminarItem({{ detalle.id_detalle_carrito }})">Eliminar</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total</strong></td>
+                            <td class="text-center total"><strong>${{ '%.2f'|format(total) }}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="text-center mt-4">
+                <a href="{{ url_for('client.procesar_compra') }}" class="btn btn-success btn-lg">Proceder al Pago</a>
+            </div>
         {% else %}
-            <p class="text-info">Tu carrito está vacío.</p>
-            <a href="{{ url_for('client.productos') }}" class="btn btn-primary">Volver a Productos</a>
+            <div class="text-center">
+                <p class="text-info mb-4">Tu carrito está vacío.</p>
+                <a href="{{ url_for('client.productos') }}" class="btn btn-primary btn-lg">Volver a Productos</a>
+            </div>
         {% endif %}
     </div>
 {% endblock %}
@@ -61,6 +79,59 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             actualizarTotal();
+
+            document.querySelectorAll('.increment, .decrement').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const detalleId = e.target.dataset.id;
+                    const isIncrement = e.target.classList.contains('increment');
+                    const response = await fetch(`/client/actualizar_cantidad/${detalleId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ increment: isIncrement })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        const cantidad = data.cantidad;
+                        const precioUnitario = data.precio_unitario || 0.00;
+                        const subtotal = cantidad * precioUnitario;
+                        document.querySelector(`.cantidad[data-id="${detalleId}"]`).textContent = cantidad;
+                        document.querySelector(`.precio-unitario[data-id="${detalleId}"]`).textContent = `$${precioUnitario.toFixed(2)}`;
+                        document.querySelector(`.subtotal[data-id="${detalleId}"]`).textContent = `$${subtotal.toFixed(2)}`;
+                        actualizarTotal();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            function actualizarTotal() {
+                let total = 0;
+                document.querySelectorAll('.subtotal').forEach(subtotal => {
+                    total += parseFloat(subtotal.textContent.replace('$', '') || 0);
+                });
+                document.querySelector('.total').textContent = `$${total.toFixed(2)}`;
+            }
         });
+
+        function eliminarItem(detalleId) {
+            if (confirm('¿Estás seguro de eliminar este item del carrito?')) {
+                fetch(`/client/eliminar_del_carrito/${detalleId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector(`tr[data-detalle-id="${detalleId}"]`).remove();
+                        actualizarTotal();
+                        if (document.querySelectorAll('tbody tr').length === 0) {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => alert('Error al eliminar el item.'));
+            }
+        }
     </script>
 {% endblock %}

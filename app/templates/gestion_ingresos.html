@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Ingresos - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Gestión de Ingresos</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Filtros -->
+        <div class="mb-4">
+            <a href="{{ url_for('admin.gestion_ingresos') }}" class="btn btn-primary">Total</a>
+            <a href="{{ url_for('admin.gestion_ingresos', tipo_filtro='productos') }}" class="btn btn-secondary">Productos</a>
+            <a href="{{ url_for('admin.gestion_ingresos', tipo_filtro='servicios') }}" class="btn btn-secondary">Servicios</a>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>{{ titulo_grafica }}</h2>
+                <canvas id="chartIngresos"></canvas>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script>
+        const ctxIngresos = document.getElementById('chartIngresos').getContext('2d');
+        new Chart(ctxIngresos, {
+            type: 'bar',
+            data: {
+                labels: ['Hoy', 'Semana', 'Mes', 'Año'],
+                datasets: [{
+                    label: 'Ingresos ($)',
+                    data: [
+                        {{ ingresos.hoy|default(0)|round(2) }},
+                        {{ ingresos.semana|default(0)|round(2) }},
+                        {{ ingresos.mes|default(0)|round(2) }},
+                        {{ ingresos.ano|default(0)|round(2) }}
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ]
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}

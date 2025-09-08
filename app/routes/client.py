@@ -49,8 +49,13 @@ def productos():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    productos = Producto.query.all()
-    return render_template('productos.html', productos=productos)
+    try:
+        productos = Producto.query.all()
+        return render_template('productos.html', productos=productos)
+    except Exception as e:
+        logger.error(f"Error al cargar productos: {str(e)}")
+        flash(f"Ocurrió un error al cargar los productos: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('auth.login'))
 
 @bp.route('/citas')
 @login_required
@@ -62,14 +67,14 @@ def citas():
     servicios = Servicio.query.all()
     return render_template('citas.html', servicios=servicios, servicio_id=servicio_id)
 
-@bp.route('/agregar_carrito/<int:producto_id>', methods=['GET'])
+@bp.route('/agregar_carrito/<int:item_id>', methods=['GET'])
 @login_required
-def agregar_carrito(producto_id):
+def agregar_carrito(item_id):
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
     try:
-        logger.debug(f"Intentando agregar producto {producto_id} para usuario {current_user.id_usuario}")
+        logger.debug(f"Intentando agregar item {item_id} para usuario {current_user.id_usuario}")
         carrito = Carrito.query.filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
         if not carrito:
             logger.debug(f"No se encontró carrito activo, creando nuevo para id_usuario={current_user.id_usuario}")
@@ -80,34 +85,51 @@ def agregar_carrito(producto_id):
         else:
             logger.debug(f"Carrito existente encontrado con id_carrito={carrito.id_carrito}")
 
-        producto = Producto.query.get_or_404(producto_id)
-        if not hasattr(producto, 'precio') or producto.precio is None:
-            raise ValueError("El producto no tiene precio definido.")
-        if not hasattr(producto, 'stock') or producto.stock is None or producto.stock <= 0:
-            flash("No hay stock disponible.", "danger")
-            return redirect(url_for('client.productos'))
+        # Determinar si es producto o servicio
+        producto = Producto.query.get(item_id)
+        servicio = Servicio.query.get(item_id)
+        if producto:
+            if not hasattr(producto, 'precio') or producto.precio is None:
+                raise ValueError("El producto no tiene precio definido.")
+            if not hasattr(producto, 'stock') or producto.stock is None or producto.stock <= 0:
+                flash("No hay stock disponible.", "danger")
+                return redirect(url_for('client.productos'))
+            detalle = DetalleCarrito(
+                id_carrito=carrito.id_carrito,
+                id_producto=item_id,
+                cantidad=1,
+                precio_unitario=producto.precio,
+                id_servicio=None
+            )
+        elif servicio:
+            if not hasattr(servicio, 'precio') or servicio.precio is None:
+                raise ValueError("El servicio no tiene precio definido.")
+            detalle = DetalleCarrito(
+                id_carrito=carrito.id_carrito,
+                id_servicio=item_id,
+                cantidad=1,
+                precio_unitario=servicio.precio,
+                id_producto=None
+            )
+        else:
+            raise ValueError("Item no encontrado o no es un producto ni un servicio.")
 
-        detalle = DetalleCarrito()
-        detalle.id_carrito = carrito.id_carrito
-        detalle.id_producto = producto_id
-        detalle.cantidad = 1
-        detalle.precio_unitario = producto.precio
-        detalle.id_servicio = None
         db.session.add(detalle)
         db.session.flush()
         logger.debug(f"Detalle creado con id_detalle_carrito={detalle.id_detalle_carrito}")
         db.session.commit()
-        logger.debug(f"Detalle agregado al carrito {carrito.id_carrito} para producto {producto_id}")
-        flash("Producto agregado al carrito.", "success")
+        logger.debug(f"Detalle agregado al carrito {carrito.id_carrito} para item {item_id}")
+        flash("Item agregado al carrito.", "success")
+        return redirect(url_for('client.productos' if producto else 'client.servicios'))
     except IntegrityError as e:
         db.session.rollback()
-        logger.error(f"Error de integridad al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Producto: {producto_id}, Carrito: {carrito.id_carrito if carrito else 'None'}")
-        flash("Error de integridad al agregar el producto. Verifica los datos e intenta de nuevo.", "danger")
+        logger.error(f"Error de integridad al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Item: {item_id}, Carrito: {carrito.id_carrito if carrito else 'None'}")
+        flash("Error de integridad al agregar el item. Verifica los datos e intenta de nuevo.", "danger")
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Producto: {producto_id}, Carrito: {carrito.id_carrito if 'carrito' in locals() else 'None'}")
-        flash(f"Ocurrió un error al agregar el producto al carrito: {str(e)}. Por favor, intenta de nuevo.", "danger")
-    return redirect(url_for('client.productos'))
+        logger.error(f"Error al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Item: {item_id}, Carrito: {carrito.id_carrito if 'carrito' in locals() else 'None'}")
+        flash(f"Ocurrió un error al agregar el item al carrito: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.productos' if producto else 'client.servicios'))
 
 @bp.route('/carrito')
 @login_required
@@ -115,10 +137,16 @@ def carrito():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    carrito = Carrito.query.options(joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto)).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    logger.debug(f"Cargando carrito para usuario: {current_user.id_usuario}")
+    carrito = Carrito.query.options(
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto),
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.servicio)
+    ).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
     logger.debug(f"Carrito cargado: {carrito}")
     if carrito:
-        logger.debug(f"Detalles: {[d.id_detalle_carrito for d in carrito.detalles]}")
+        logger.debug(f"Detalles cargados: {[d.id_detalle_carrito for d in carrito.detalles]}")
+        for detalle in carrito.detalles:
+            logger.debug(f"Detalle {detalle.id_detalle_carrito}: producto = {detalle.producto}, servicio = {detalle.servicio}")
     else:
         logger.debug("No se encontró carrito activo")
     if not carrito:
@@ -144,19 +172,65 @@ def eliminar_del_carrito(detalle_id):
         logger.error(f"Error al eliminar del carrito: {str(e)}")
         return jsonify({'success': False, 'message': f'Ocurrió un error: {str(e)}'}), 500
 
+@bp.route('/actualizar_cantidad/<int:detalle_id>', methods=['POST'])
+@login_required
+def actualizar_cantidad(detalle_id):
+    if current_user.rol != 'cliente':
+        return jsonify({'success': False, 'message': 'Acceso denegado. Solo para clientes.'}), 403
+    detalle = DetalleCarrito.query.get_or_404(detalle_id)
+    if detalle.carrito and detalle.carrito.id_usuario != current_user.id_usuario:
+        return jsonify({'success': False, 'message': 'No tienes permiso para modificar este item.'}), 403
+
+    data = request.get_json()
+    increment = data.get('increment', False)
+    producto = Producto.query.get(detalle.id_producto) if detalle.id_producto else None
+
+    if detalle.id_producto and (not producto or not hasattr(producto, 'stock') or producto.stock is None):
+        return jsonify({'success': False, 'message': 'Producto no disponible o sin stock.'}), 400
+
+    nueva_cantidad = detalle.cantidad
+    if increment:
+        if detalle.id_producto and producto.stock > detalle.cantidad:
+            nueva_cantidad += 1
+        elif not detalle.id_producto or (detalle.id_servicio and nueva_cantidad < 10):  # Límite arbitrario para servicios
+            nueva_cantidad += 1
+        else:
+            return jsonify({'success': False, 'message': 'No hay suficiente stock disponible o límite alcanzado.'}), 400
+    else:
+        if detalle.cantidad > 1:
+            nueva_cantidad -= 1
+        else:
+            return jsonify({'success': False, 'message': 'La cantidad no puede ser menor a 1.'}), 400
+
+    detalle.cantidad = nueva_cantidad
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'cantidad': nueva_cantidad,
+            'precio_unitario': detalle.precio_unitario
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al actualizar cantidad: {str(e)}")
+        return jsonify({'success': False, 'message': f'Ocurrió un error: {str(e)}'}), 500
+
 @bp.route('/procesar_compra', methods=['GET', 'POST'])
 @login_required
 def procesar_compra():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    carrito = Carrito.query.options(joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto)).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    carrito = Carrito.query.options(
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto),
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.servicio)
+    ).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
     if not carrito or not carrito.detalles:
         flash("No tienes items en el carrito para procesar.", "danger")
         return redirect(url_for('client.carrito'))
     if request.method == 'POST':
         try:
-            # Verificar y actualizar stock
+            # Verificar y actualizar stock para productos
             for detalle in carrito.detalles:
                 if detalle.id_producto:
                     producto = Producto.query.get(detalle.id_producto)
@@ -176,7 +250,7 @@ def procesar_compra():
             # Crear detalles de venta basados en el carrito
             detalles_venta = []
             for detalle in carrito.detalles:
-                if detalle.id_producto or detalle.id_servicio:  # Solo procesar si hay producto o servicio
+                if detalle.id_producto or detalle.id_servicio:
                     detalle_venta = DetalleVenta(
                         id_venta=venta.id_venta,
                         id_producto=detalle.id_producto,
@@ -228,14 +302,14 @@ def procesar_compra():
                 if detalle.id_producto:
                     producto = Producto.query.get(detalle.id_producto)
                     if producto:
-                        subtotal = detalle.cantidad * detalle.precio_unitario if detalle.cantidad and detalle.precio_unitario else 0.00
-                        c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad or 0} u. - ${subtotal:.2f}")
+                        subtotal = detalle.cantidad * detalle.precio_unitario
+                        c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
                         y -= 20
                 elif detalle.id_servicio:
                     servicio = Servicio.query.get(detalle.id_servicio)
                     if servicio:
-                        subtotal = detalle.cantidad * detalle.precio_unitario if detalle.cantidad and detalle.precio_unitario else 0.00
-                        c.drawString(60, y, f"{servicio.nombre} - {detalle.cantidad or 0} u. - ${subtotal:.2f}")
+                        subtotal = detalle.cantidad * detalle.precio_unitario
+                        c.drawString(60, y, f"{servicio.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
                         y -= 20
 
             c.drawString(50, y-10, "-------------------------")
@@ -341,6 +415,7 @@ def borrar_perfil():
         logger.error(f"Error inesperado al borrar perfil: {str(e)} - Usuario: {current_user.id_usuario}")
         flash(f"Ocurrió un error al borrar el perfil: {str(e)}. Por favor, intenta de nuevo.", "danger")
         return redirect(url_for('client.dashboard'))
+
 @bp.route('/descargar_factura/<int:venta_id>', methods=['GET'])
 @login_required
 def descargar_factura(venta_id):
@@ -371,14 +446,14 @@ def descargar_factura(venta_id):
             if detalle.id_producto:
                 producto = detalle.producto
                 if producto:
-                    subtotal = detalle.cantidad * detalle.precio_unitario if detalle.cantidad and detalle.precio_unitario else 0.00
-                    c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad or 0} u. - ${subtotal:.2f}")
+                    subtotal = detalle.cantidad * detalle.precio_unitario
+                    c.drawString(60, y, f"{producto.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
                     y -= 20
             elif detalle.id_servicio:
                 servicio = Servicio.query.get(detalle.id_servicio)
                 if servicio:
-                    subtotal = detalle.cantidad * detalle.precio_unitario if detalle.cantidad and detalle.precio_unitario else 0.00
-                    c.drawString(60, y, f"{servicio.nombre} - {detalle.cantidad or 0} u. - ${subtotal:.2f}")
+                    subtotal = detalle.cantidad * detalle.precio_unitario
+                    c.drawString(60, y, f"{servicio.nombre} - {detalle.cantidad} u. - ${subtotal:.2f}")
                     y -= 20
 
         c.drawString(50, y-10, "-------------------------")
@@ -446,8 +521,8 @@ def generate_factura_latex(carrito, venta):
     total = sum(d.cantidad * d.precio_unitario for d in detalles if d.id_producto or d.id_servicio)
     table_rows = []
     for detalle in detalles:
-        if detalle.id_product:
-            producto = Producto.query.get(detalle.id_producto)
+        if detalle.id_producto:
+            producto = Producto.query.get(detalle.id_product)
             if producto:
                 row = f"{producto.nombre} & {detalle.cantidad or 0} & ${detalle.precio_unitario or 0:.2f} & ${(detalle.cantidad or 0) * (detalle.precio_unitario or 0):.2f} \\\\"
                 table_rows.append(row)

@@ -5,11 +5,11 @@ from app.models.productos import Producto
 from app.models.categorias import Categoria
 from app.models.servicios import Servicio
 from app.models.citas import Cita
+from app.models.inventario_movimientos import InventarioMovimiento
 from flask_login import login_required, current_user
 import logging
-from sqlalchemy.exc import IntegrityError
-from werkzeug.security import generate_password_hash
-from datetime import datetime
+from sqlalchemy import func
+from datetime import datetime, timedelta
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -374,8 +374,6 @@ def gestion_citas_pendientes():
     if current_user.rol != 'admin':
         flash("Acceso denegado. Solo para administradores.", "danger")
         return redirect(url_for('auth.login'))
-    from app.models.users import Usuario
-    from app.models.asignaciones import Asignacion
     citas_pendientes = Cita.query.filter_by(estado='pendiente').filter_by(id_empleado=None).all()
     empleados = Usuario.query.filter_by(rol='empleado').all()
     return render_template('gestion_citas_pendientes.html', citas_pendientes=citas_pendientes, empleados=empleados)
@@ -386,7 +384,6 @@ def asignar_empleado(id_cita):
     if current_user.rol != 'admin':
         flash("Acceso denegado. Solo para administradores.", "danger")
         return redirect(url_for('auth.login'))
-    from app.models.asignaciones import Asignacion
     cita = Cita.query.get_or_404(id_cita)
     if cita.estado != 'pendiente' or cita.id_empleado is not None:
         flash("Esta cita no puede ser asignada.", "danger")
@@ -402,3 +399,67 @@ def asignar_empleado(id_cita):
     db.session.commit()
     flash("Cita asignada con éxito.", "success")
     return redirect(url_for('admin.gestion_citas_pendientes'))
+
+@bp.route('/gestion_ingresos')
+@login_required
+def gestion_ingresos():
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+
+    # Fechas actuales
+    today = datetime.now().date()
+    start_week = today - timedelta(days=today.weekday())  # Inicio de la semana (lunes)
+    start_month = today.replace(day=1)
+    start_year = today.replace(month=1, day=1)
+
+    # Ingresos por productos (desde InventarioMovimiento - solo salidas)
+    ingresos_productos = {
+        'hoy': 0.0,
+        'semana': 0.0,
+        'mes': 0.0,
+        'ano': 0.0
+    }
+    movimientos = InventarioMovimiento.query.join(Producto).filter(
+        InventarioMovimiento.tipo_movimiento == 'salida'
+    ).all()
+    for movimiento in movimientos:
+        producto = movimiento.producto
+        if producto and producto.precio is not None:
+            fecha_movimiento = movimiento.fecha_movimiento.date()
+            ingreso = abs(movimiento.cantidad) * float(producto.precio)  # Usamos abs para manejar cantidades negativas si las hay
+            logger.debug(f"Movimiento: {movimiento.id_movimiento}, Cantidad: {movimiento.cantidad}, Precio: {producto.precio}, Ingreso: {ingreso}, Fecha: {fecha_movimiento}")
+            if fecha_movimiento == today:
+                ingresos_productos['hoy'] += ingreso
+            if start_week <= fecha_movimiento <= today:
+                ingresos_productos['semana'] += ingreso
+            if start_month <= fecha_movimiento <= today:
+                ingresos_productos['mes'] += ingreso
+            if start_year <= fecha_movimiento <= today:
+                ingresos_productos['ano'] += ingreso
+
+    # Ingresos por servicios (desde citas completadas)
+    ingresos_servicios = {
+        'hoy': 0.0,
+        'semana': 0.0,
+        'mes': 0.0,
+        'ano': 0.0
+    }
+    citas_completadas = Cita.query.filter_by(estado='completada').all()
+    for cita in citas_completadas:
+        fecha_cita = cita.fecha_hora.date()
+        ingreso = cita.servicio.precio if cita.servicio and cita.servicio.precio else 0.0
+        if fecha_cita == today:
+            ingresos_servicios['hoy'] += ingreso
+        if start_week <= fecha_cita <= today:
+            ingresos_servicios['semana'] += ingreso
+        if start_month <= fecha_cita <= today:
+            ingresos_servicios['mes'] += ingreso
+        if start_year <= fecha_cita <= today:
+            ingresos_servicios['ano'] += ingreso
+
+    logger.debug(f"Ingresos productos: {ingresos_productos}")
+    logger.debug(f"Ingresos servicios: {ingresos_servicios}")
+    return render_template('gestion_ingresos.html', 
+                          ingresos_productos=ingresos_productos, 
+                          ingresos_servicios=ingresos_servicios)
