@@ -3,7 +3,7 @@ from app import db
 class Venta(db.Model):
     __tablename__ = 'ventas'
     id_venta = db.Column(db.Integer, primary_key=True)
-    id_usuario = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'))
+    id_usuario = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=True)  # Permitir NULL
     fecha_venta = db.Column(db.DateTime, default=db.func.current_timestamp())
     total = db.Column(db.Numeric(10, 2), nullable=False)
 

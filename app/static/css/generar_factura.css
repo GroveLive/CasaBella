@@ -1,0 +1,517 @@
+/* Importar variables de base.css (asegúrate de que base.css esté cargado primero) */
+:root {
+    --primary-color: #1e3a8a; /* Azul real */
+    --secondary-color: #3b82f6; /* Azul zafiro */
+    --dark-bg: #0f172a; /* Negro profundo */
+    --card-bg: #1e293b; /* Negro azulado opulento */
+    --text-primary: #f9fafb; /* Blanco puro */
+    --border-color: #d1d5db; /* Plata metálica */
+    --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 15px rgba(30, 58, 138, 0.1); /* Sombras frías */
+    --gradient-primary: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    --glow-effect: 0 0 15px rgba(59, 130, 246, 0.5), 0 0 30px rgba(30, 58, 138, 0.3);
+}
+
+/* Tema claro (si se usa data-theme="light" desde base.css) */
+[data-theme="light"] {
+    --primary-color: #1e40af; /* Azul oscuro */
+    --secondary-color: #60a5fa; /* Azul claro */
+    --dark-bg: #f5f5f4; /* Crema suave */
+    --card-bg: #e5e7eb; /* Gris claro */
+    --text-primary: #1e293b; /* Negro profundo */
+    --border-color: #cbd5e1; /* Plata suave */
+    --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 15px rgba(30, 64, 175, 0.1);
+    --gradient-primary: linear-gradient(135deg, #1e40af 0%, #60a5fa 100%);
+    --glow-effect: 0 0 15px rgba(96, 165, 250, 0.5), 0 0 30px rgba(30, 64, 175, 0.3);
+}
+
+/* Estilos generales */
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    font-family: "Playfair Display", "Inter", serif;
+    transition: all 0.4s ease;
+}
+
+[data-theme="light"] body {
+    background-color: var(--dark-bg); /* Ajustado para consistencia */
+}
+
+.generar-factura-container {
+    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--card-bg) 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+    position: relative;
+    overflow: hidden;
+    animation: bgPulse 10s infinite alternate;
+}
+
+.generar-factura-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255, 255, 255, 0.05)"><polygon points="1000,100 1000,0 0,100"/></svg>');
+    background-size: cover;
+    opacity: 0.1;
+    z-index: 0;
+    animation: waveEffect 5s infinite linear;
+}
+
+/* Animaciones de fondo */
+@keyframes bgPulse {
+    0% { background-position: 0 0; }
+    100% { background-position: 100% 0; }
+}
+
+@keyframes waveEffect {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Tarjeta principal */
+.factura-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--shadow-elegant);
+    border: none;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    animation: glideIn 0.8s ease-out, cardHover 5s infinite alternate;
+}
+
+.factura-header {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    box-shadow: inset 0 -5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.factura-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    animation: glowText 2s infinite alternate;
+}
+
+@keyframes glowText {
+    0% { text-shadow: 0 0 5px rgba(59, 130, 246, 0.3); }
+    100% { text-shadow: 0 0 15px rgba(59, 130, 246, 0.7); }
+}
+
+.factura-body {
+    padding: 2.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+/* Secciones del formulario */
+.form-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--primary-color);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.5s ease-in;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-section:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(30, 58, 138, 0.2);
+}
+
+.form-section-title {
+    color: var(--secondary-color);
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: slideIn 0.5s ease-out;
+}
+
+.form-section-title i {
+    margin-right: 0.5rem;
+    font-size: 1.3rem;
+    animation: spin 2s infinite linear reverse;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.form-label:hover {
+    color: var(--secondary-color);
+}
+
+.form-control,
+.form-select {
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transition: all 0.4s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.2), var(--glow-effect);
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.form-control:hover,
+.form-select:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(30, 58, 138, 0.3);
+}
+
+/* Corrección para select en modo oscuro */
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23f9fafb'%3e%3cpath fill='none' stroke='%23f9fafb' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
+
+.form-select option {
+    background-color: var(--card-bg); /* Fondo oscuro para opciones */
+    color: var(--text-primary); /* Texto blanco en modo oscuro */
+}
+
+[data-theme="light"] .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%231e293b'%3e%3cpath fill='none' stroke='%231e293b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+}
+
+[data-theme="light"] .form-select option {
+    background-color: var(--card-bg); /* Fondo claro para opciones */
+    color: var(--text-primary); /* Texto negro en modo claro */
+}
+
+/* Filas de ítems */
+.item-row {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    transition: all 0.5s ease;
+    animation: slideIn 0.3s ease-out;
+}
+
+.item-row:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2), var(--glow-effect);
+    transform: translateY(-5px) scale(1.02);
+}
+
+.item-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    animation: fadeIn 0.5s ease-in;
+}
+
+.item-number {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+.remove-item {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: bounceIn 0.5s ease-out;
+}
+
+.remove-item:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
+    background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.9); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.remove-item i {
+    font-size: 0.9rem;
+}
+
+/* Botón para agregar ítems */
+.add-item-btn {
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.5rem auto;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    animation: float 3s infinite alternate;
+}
+
+.add-item-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3), var(--glow-effect);
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
+@keyframes float {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-10px); }
+}
+
+.add-item-btn i {
+    font-size: 1.1rem;
+}
+
+/* Botón de submit */
+.submit-btn {
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 2rem auto 0;
+    min-width: 200px;
+    justify-content: center;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    animation: pulseGlow 3s infinite alternate;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3), var(--glow-effect);
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+    100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.7), var(--glow-effect); }
+}
+
+.submit-btn i {
+    font-size: 1.2rem;
+}
+
+/* Alertas */
+.alert {
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid;
+    font-weight: 500;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.5s ease-in;
+    transition: transform 0.3s ease;
+}
+
+.alert:hover {
+    transform: scale(1.02);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(209, 250, 229, 0.5) 0%, rgba(167, 243, 208, 0.5) 100%);
+    color: #065f46;
+    border-left-color: #10b981;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, rgba(254, 226, 226, 0.5) 0%, rgba(254, 202, 202, 0.5) 100%);
+    color: #991b1b;
+    border-left-color: #ef4444;
+}
+
+/* Estado de carga */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    animation: fadeIn 0.5s ease-in forwards;
+}
+
+.loading-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-spinner {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: var(--shadow-elegant);
+    animation: rotateIn 1s ease-out;
+}
+
+@keyframes rotateIn {
+    0% { transform: rotate(-20deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--secondary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite, pulse 2s infinite alternate;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .factura-header {
+        padding: 1.5rem;
+    }
+
+    .factura-header h1 {
+        font-size: 2rem;
+    }
+
+    .factura-body {
+        padding: 1.5rem;
+    }
+
+    .form-section {
+        padding: 1rem;
+    }
+
+    .item-row {
+        padding: 1rem;
+    }
+
+    .item-row-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .remove-item {
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 576px) {
+    .generar-factura-container {
+        padding: 1rem 0;
+    }
+
+    .factura-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .factura-body {
+        padding: 1rem;
+    }
+
+    .form-section {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .item-row {
+        padding: 0.75rem;
+    }
+
+    .add-item-btn,
+    .submit-btn {
+        width: 100%;
+    }
+}
+
+/* Animations */
+@keyframes glideIn {
+    from { opacity: 0; transform: translateY(50px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cardHover {
+    0% { box-shadow: var(--shadow-elegant); }
+    100% { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 20px rgba(30, 58, 138, 0.5); }
+}
