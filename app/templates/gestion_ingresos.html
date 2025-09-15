@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Gestión de Ingresos - Casa Bella{% endblock %}
 {% block styles %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.min.css">
+    <style>
+        .filter-btn.active { background-color: #007bff; color: white; }
+        .income-table { margin-top: 20px; }
+        .chart-container { position: relative; height: 400px; margin-top: 20px; }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
@@ -9,57 +14,124 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <!-- Filtros -->
+        <!-- Filtros dinámicos -->
         <div class="mb-4">
-            <a href="{{ url_for('admin.gestion_ingresos') }}" class="btn btn-primary">Total</a>
-            <a href="{{ url_for('admin.gestion_ingresos', tipo_filtro='productos') }}" class="btn btn-secondary">Productos</a>
-            <a href="{{ url_for('admin.gestion_ingresos', tipo_filtro='servicios') }}" class="btn btn-secondary">Servicios</a>
+            <button class="btn filter-btn {{ 'active' if not tipo_filtro or tipo_filtro == 'total' else '' }}" data-filter="total">Total</button>
+            <button class="btn filter-btn {{ 'active' if tipo_filtro == 'productos' else '' }}" data-filter="productos">Productos</button>
+            <button class="btn filter-btn {{ 'active' if tipo_filtro == 'servicios' else '' }}" data-filter="servicios">Servicios</button>
+            <select class="form-select w-auto d-inline-block ms-2" id="chartType">
+                <option value="bar">Barras</option>
+                <option value="line">Línea</option>
+                <option value="pie">Circular</option>
+            </select>
         </div>
 
         <div class="row">
             <div class="col-md-12">
                 <h2>{{ titulo_grafica }}</h2>
-                <canvas id="chartIngresos"></canvas>
+                <div class="chart-container">
+                    <canvas id="chartIngresos"></canvas>
+                </div>
             </div>
+        </div>
+
+        <!-- Tabla de ingresos -->
+        <div class="income-table">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th>Ingresos ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Hoy</td><td>{{ ingresos.hoy|round(2) }}</td></tr>
+                    <tr><td>Semana</td><td>{{ ingresos.semana|round(2) }}</td></tr>
+                    <tr><td>Mes</td><td>{{ ingresos.mes|round(2) }}</td></tr>
+                    <tr><td>Año</td><td>{{ ingresos.ano|round(2) }}</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 {% endblock %}
 {% block scripts %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script>
-        const ctxIngresos = document.getElementById('chartIngresos').getContext('2d');
-        new Chart(ctxIngresos, {
-            type: 'bar',
-            data: {
-                labels: ['Hoy', 'Semana', 'Mes', 'Año'],
-                datasets: [{
-                    label: 'Ingresos ($)',
-                    data: [
-                        {{ ingresos.hoy|default(0)|round(2) }},
-                        {{ ingresos.semana|default(0)|round(2) }},
-                        {{ ingresos.mes|default(0)|round(2) }},
-                        {{ ingresos.ano|default(0)|round(2) }}
-                    ],
-                    backgroundColor: [
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(255, 206, 86, 0.6)',
-                        'rgba(153, 102, 255, 0.6)'
-                    ]
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        let chartIngresos;
+
+        function updateChart(filter = 'total') {
+            const url = filter === 'total' ? '{{ url_for('admin.gestion_ingresos') }}' : '{{ url_for('admin.gestion_ingresos', tipo_filtro=filter) }}';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const labels = ['Hoy', 'Semana', 'Mes', 'Año'];
+                    const datasets = [{
+                        label: 'Ingresos ($)',
+                        data: [data.hoy, data.semana, data.mes, data.ano],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(255, 206, 86, 0.6)',
+                            'rgba(153, 102, 255, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }];
+
+                    if (chartIngresos) {
+                        chartIngresos.destroy();
                     }
-                }
-            }
+
+                    chartIngresos = new Chart(document.getElementById('chartIngresos').getContext('2d'), {
+                        type: document.getElementById('chartType').value,
+                        data: { labels, datasets },
+                        options: {
+                            scales: {
+                                y: { beginAtZero: true, title: { display: true, text: 'Ingresos ($)' } },
+                                x: { title: { display: true, text: 'Período' } }
+                            },
+                            plugins: {
+                                legend: { display: true, position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) label += ': ';
+                                            return label + new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(context.raw);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        // Event listeners
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.queryChart('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateChart(btn.getAttribute('data-filter'));
+            });
         });
+
+        document.getElementById('chartType').addEventListener('change', () => updateChart(document.querySelector('.filter-btn.active').getAttribute('data-filter')));
+
+        // Inicializar gráfica
+        updateChart('{{ tipo_filtro if tipo_filtro else "total" }}');
     </script>
 {% endblock %}

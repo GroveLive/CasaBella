@@ -1,0 +1,24 @@
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+}
+.bg-gradient-success {
+    background: linear-gradient(45deg, #28a745, #1e7e34);
+}
+.bg-gradient-info {
+    background: linear-gradient(45deg, #17a2b8, #117a8b);
+}
+.bg-gradient-warning {
+    background: linear-gradient(45deg, #ffc107, #e0a800);
+}
+.bg-gradient-secondary {
+    background: linear-gradient(45deg, #6c757d, #545b62);
+}
+.bg-gradient-danger {
+    background: linear-gradient(45deg, #dc3545, #bd2130);
+}
+.bg-gradient-dark {
+    background: linear-gradient(45deg, #343a40, #212529);
+}
+.card-body {
+    min-height: 150px;
+}

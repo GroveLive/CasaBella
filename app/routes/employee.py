@@ -1,15 +1,34 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
 from app import db
 from app.models.citas import Cita
+from app.models.servicios import Servicio
+from app.models.productos import Producto
+from app.models.ventas import Venta
+from app.models.detalle_ventas import DetalleVenta
+from app.models.pagos import Pago
+from app.models.users import Usuario
+from app.models.inventario_movimientos import InventarioMovimiento
 from flask_login import login_required, current_user
 import logging
 from datetime import datetime
+from decimal import Decimal
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.colors import white
+from PIL import Image, ImageDraw
+
+import io
 
 bp = Blueprint('employee', __name__, url_prefix='/employee')
 
 # Configurar logging básico
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# IVA (16% como estándar, ajustable)
+IVA_RATE = Decimal("0.16")
 
 @bp.route('/dashboard')
 @login_required
@@ -61,7 +80,152 @@ def completar_cita(id_cita):
     if cita.estado != 'confirmada':
         flash("Esta cita no puede ser completada. Debe estar confirmada primero.", "danger")
         return redirect(url_for('employee.trabajar_citas'))
+    
+    # Completar la cita
     cita.estado = 'completada'
     db.session.commit()
-    flash("Cita completada con éxito.", "success")
-    return redirect(url_for('employee.trabajar_citas'))
+
+    # Generar y descargar factura
+    return redirect(url_for('employee.generar_factura', id_cita=id_cita))
+
+@bp.route('/generar_factura/<int:id_cita>')
+@login_required
+def generar_factura(id_cita):
+    if current_user.rol != 'empleado':
+        flash("Acceso denegado. Solo para empleados.", "danger")
+        return redirect(url_for('auth.login'))
+    
+    cita = Cita.query.get_or_404(id_cita)
+    if cita.estado != 'completada':
+        flash("La cita debe estar completada para generar una factura.", "danger")
+        return redirect(url_for('employee.trabajar_citas'))
+    if cita.id_empleado != current_user.id_usuario:
+        flash("No tienes permiso para generar esta factura.", "danger")
+        return redirect(url_for('employee.trabajar_citas'))
+
+    # Verificar y obtener el cliente
+    if not cita.id_usuario:
+        flash("No se encontró un cliente asociado a esta cita.", "danger")
+        return redirect(url_for('employee.trabajar_citas'))
+    
+    cliente = Usuario.query.get(cita.id_usuario)
+    if not cliente:
+        flash(f"No se encontró un usuario con ID {cita.id_usuario} asociado a la cita.", "danger")
+        return redirect(url_for('employee.trabajar_citas'))
+    
+    logger.debug(f"Generando factura para cita {id_cita}. Cliente: {cliente.nombre}, ID Usuario: {cita.id_usuario}")
+
+    # Obtener el servicio de la cita
+    servicio = Servicio.query.get(cita.id_servicio)
+    if not servicio or not hasattr(servicio, 'precio') or servicio.precio is None:
+        flash("El servicio asociado a la cita no tiene precio definido.", "danger")
+        return redirect(url_for('employee.trabajar_citas'))
+
+    # Calcular total (solo servicio por ahora)
+    subtotal = Decimal(str(servicio.precio))
+    iva = subtotal * IVA_RATE
+    total = subtotal + iva
+
+    # Crear la venta
+    venta = Venta(id_usuario=cita.id_usuario, fecha_venta=datetime.utcnow(), total=total)
+    db.session.add(venta)
+    db.session.flush()  # Obtener id_venta antes de commit
+
+    # Crear detalle de venta
+    detalle_venta = DetalleVenta(
+        id_venta=venta.id_venta,
+        id_servicio=cita.id_servicio,
+        cantidad=1,
+        precio_unitario=servicio.precio
+    )
+    db.session.add(detalle_venta)
+
+    # Crear registro de pago (asumimos efectivo por defecto)
+    pago = Pago(id_venta=venta.id_venta, metodo_pago='efectivo', monto=total)
+    db.session.add(pago)
+
+    db.session.commit()
+
+    # Generar factura PDF
+    nombre_archivo = f'factura_{cita.id_usuario}_{venta.id_venta}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+    ruta_archivo = os.path.join(os.path.dirname(__file__), '..', 'static', nombre_archivo)
+    c = canvas.Canvas(ruta_archivo, pagesize=letter)
+    c.setFont("Helvetica-Bold", 16)
+
+    # Logo circular
+    logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
+    if os.path.exists(logo_path):
+        def create_circular_image(image_path, size=80):
+            img = Image.open(image_path)
+            img = img.convert("RGBA")
+            img.thumbnail((size, size), Image.Resampling.LANCZOS)
+            mask = Image.new('L', (size, size), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0, size, size), fill=255)
+            output = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+            output.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
+            output.putalpha(mask)
+            img_buffer = io.BytesIO()
+            output.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            return img_buffer
+        
+        circular_logo = create_circular_image(logo_path, 80)
+        logo_x = 50
+        logo_y = 720
+        logo_size = 80
+        c.drawImage(ImageReader(circular_logo), logo_x, logo_y, logo_size, logo_size)
+
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(150, 760, "Casa Bella")
+    c.setFont("Helvetica", 14)
+    c.drawString(150, 740, "Salón de Belleza y Distribuidora")
+    
+    c.setStrokeColorRGB(0.2, 0.4, 0.8)
+    c.setLineWidth(2)
+    c.line(50, 710, 550, 710)
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, 680, "FACTURA")
+    c.setFont("Helvetica", 10)
+    c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
+    
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, 660, "DATOS DEL CLIENTE:")
+    c.setFont("Helvetica", 10)
+    c.drawString(50, 645, f"Nombre: {cliente.nombre}")
+    c.drawString(50, 630, f"Email: {cliente.email or 'No proporcionado'}")
+    c.drawString(50, 615, f"Teléfono: {cliente.telefono or 'No proporcionado'}")
+
+    y = 580
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, y, "SERVICIOS:")
+    c.setStrokeColorRGB(0.8, 0.8, 0.8)
+    c.line(50, y-5, 550, y-5)
+    
+    y -= 25
+    c.setFont("Helvetica", 9)
+    subtotal_item = Decimal(str(1)) * Decimal(str(servicio.precio))
+    c.drawString(60, y, f"{servicio.nombre} x 1 - ${subtotal_item.quantize(Decimal('0.01'))}")
+    y -= 20
+
+    c.drawString(50, y-10, "─" * 70)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(400, y-30, f"Subtotal: ${subtotal.quantize(Decimal('0.01'))}")
+    c.drawString(400, y-45, f"IVA (16%): ${iva.quantize(Decimal('0.01'))}")
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(400, y-65, f"TOTAL: ${total.quantize(Decimal('0.01'))}")
+    
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(50, y-100, "¡Gracias por confiar en Casa Bella!")
+    c.drawString(50, y-115, "Tu belleza es nuestra pasión")
+    c.save()
+
+    if not os.path.exists(ruta_archivo):
+        raise FileNotFoundError(f"El archivo {ruta_archivo} no se creó correctamente.")
+
+    flash("Factura generada con éxito. Descargando...", "success")
+    response = send_file(ruta_archivo, as_attachment=True, download_name=nombre_archivo)
+    if os.path.exists(ruta_archivo):
+        os.remove(ruta_archivo)
+    return response

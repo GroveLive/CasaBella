@@ -9,7 +9,10 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
@@ -42,8 +45,10 @@
                                 </form>
                             {% elif cita.estado == 'confirmada' %}
                                 <form method="POST" action="{{ url_for('employee.completar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
-                                    <button type="submit" class="btn btn-primary btn-sm">Completar</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">Completar y Facturar</button>
                                 </form>
+                            {% elif cita.estado == 'completada' %}
+                                <a href="{{ url_for('employee.generar_factura', id_cita=cita.id_cita) }}" class="btn btn-info btn-sm">Descargar Factura</a>
                             {% else %}
                                 <span class="badge bg-secondary">Sin acciones</span>
                             {% endif %}

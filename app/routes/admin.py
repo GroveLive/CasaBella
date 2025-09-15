@@ -13,6 +13,7 @@ from flask_login import login_required, current_user
 import logging
 from sqlalchemy import func
 from datetime import datetime, timedelta
+from flask import jsonify
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -52,7 +53,7 @@ def admin_dashboard():
     ).count()
 
     try:
-        # Calcular ingresos por productos con join explícito
+        # Calcular ingresos por productos
         ingresos_productos_query = db.session.query(
             func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)).label('total')
         ).join(InventarioMovimiento, InventarioMovimiento.id_producto == Producto.id_producto).filter(
@@ -71,7 +72,7 @@ def admin_dashboard():
             func.date(InventarioMovimiento.fecha_movimiento).between(start_year, today)
         ).scalar() or 0.0
 
-        # Calcular ingresos por servicios con join explícito
+        # Calcular ingresos por servicios
         ingresos_servicios_query = db.session.query(
             func.sum(Servicio.precio).label('total')
         ).join(Cita, Cita.id_servicio == Servicio.id_servicio).filter(
@@ -105,6 +106,15 @@ def admin_dashboard():
         logger.error(f"Error al calcular ingresos o inventario: {str(e)}")
         # Mantener valores por defecto en caso de error
 
+    tipo_filtro = request.args.get('tipo_filtro', 'total')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if tipo_filtro == 'productos':
+            return jsonify(ingresos_productos)
+        elif tipo_filtro == 'servicios':
+            return jsonify(ingresos_servicios)
+        else:
+            return jsonify(ingresos)
+
     return render_template('dashboard_admin.html', 
                           usuarios_count=usuarios_count, 
                           productos_count=productos_count, 
@@ -116,7 +126,8 @@ def admin_dashboard():
                           stock_total=stock_total,
                           stock_bajo=stock_bajo,
                           movimientos_recientes=movimientos_recientes,
-                          user=current_user)
+                          user=current_user,
+                          tipo_filtro=tipo_filtro)
 
 @bp.route('/gestion_usuarios')
 @login_required

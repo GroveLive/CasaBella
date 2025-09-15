@@ -3,107 +3,130 @@
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .filter-btn.active { background-color: #007bff; color: white; }
+        .chart-container { position: relative; height: 400px; margin-top: 20px; }
+        .income-filters { margin-bottom: 20px; }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Panel de Administrador</h1>
+        <h1 class="mb-4 text-primary">Panel de Administrador</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <div class="row">
-            <div class="col-md-3">
-                <div class="card text-white bg-primary mb-3">
-                    <div class="card-body">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col">
+                <div class="card h-100 bg-gradient-primary text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-users fa-2x mb-3"></i>
                         <h5 class="card-title">Usuarios</h5>
-                        <p class="card-text">{{ usuarios_count }}</p>
+                        <p class="card-text display-6">{{ usuarios_count }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-success mb-3">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card h-100 bg-gradient-success text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-box-open fa-2x mb-3"></i>
                         <h5 class="card-title">Productos</h5>
-                        <p class="card-text">{{ productos_count }}</p>
+                        <p class="card-text display-6">{{ productos_count }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-info mb-3">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card h-100 bg-gradient-info text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-concierge-bell fa-2x mb-3"></i>
                         <h5 class="card-title">Servicios</h5>
-                        <p class="card-text">{{ servicios_count }}</p>
+                        <p class="card-text display-6">{{ servicios_count }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-warning mb-3">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card h-100 bg-gradient-warning text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-calendar-check fa-2x mb-3"></i>
                         <h5 class="card-title">Citas Pendientes</h5>
-                        <p class="card-text">{{ citas_pendientes_count }}</p>
+                        <p class="card-text display-6">{{ citas_pendientes_count }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-secondary mb-3">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card h-100 bg-gradient-secondary text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-warehouse fa-2x mb-3"></i>
                         <h5 class="card-title">Stock Total</h5>
-                        <p class="card-text">{{ stock_total }}</p>
+                        <p class="card-text display-6">{{ stock_total }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-danger mb-3">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card h-100 bg-gradient-danger text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
                         <h5 class="card-title">Stock Bajo</h5>
-                        <p class="card-text">{{ stock_bajo }}</p>
+                        <p class="card-text display-6">{{ stock_bajo }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-dark mb-3">
-                    <div class="card-body">
+            <div class="col">
+                <div class="card h-100 bg-gradient-dark text-white shadow-sm">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <i class="fas fa-truck-moving fa-2x mb-3"></i>
                         <h5 class="card-title">Movimientos Recientes</h5>
-                        <p class="card-text">{{ movimientos_recientes }}</p>
+                        <p class="card-text display-6">{{ movimientos_recientes }}</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row mt-4">
+        <div class="row mt-5">
             <div class="col-md-4">
-                <div class="card">
+                <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Usuarios</h5>
-                        <a href="{{ url_for('admin.gestion_usuarios') }}" class="btn btn-primary">Ver Usuarios</a>
+                        <a href="{{ url_for('admin.gestion_usuarios') }}" class="btn btn-primary w-100">Ver Usuarios</a>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card">
+                <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Productos</h5>
-                        <a href="{{ url_for('admin.gestion_productos') }}" class="btn btn-primary">Ver Productos</a>
+                        <a href="{{ url_for('admin.gestion_productos') }}" class="btn btn-primary w-100">Ver Productos</a>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card">
+                <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Ingresos</h5>
-                        <a href="{{ url_for('admin.gestion_ingresos') }}" class="btn btn-primary">Ver Ingresos</a>
+                        <a href="{{ url_for('admin.gestion_ingresos') }}" class="btn btn-primary w-100">Ver Ingresos</a>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row mt-4">
+        <div class="row mt-5">
             <div class="col-md-12">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Ingresos Totales</h5>
-                        <canvas id="chartIngresos"></canvas>
+                        <h5 class="card-title">Ingresos</h5>
+                        <div class="income-filters mb-3">
+                            <button class="btn filter-btn {{ 'active' if not tipo_filtro or tipo_filtro == 'total' else '' }}" data-filter="total">Total</button>
+                            <button class="btn filter-btn {{ 'active' if tipo_filtro == 'productos' else '' }}" data-filter="productos">Productos</button>
+                            <button class="btn filter-btn {{ 'active' if tipo_filtro == 'servicios' else '' }}" data-filter="servicios">Servicios</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartIngresos"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -113,69 +136,74 @@
 {% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script>
-        const ctxIngresos = document.getElementById('chartIngresos').getContext('2d');
-        new Chart(ctxIngresos, {
-            type: 'bar',
-            data: {
-                labels: ['Hoy', 'Semana', 'Mes', 'Año'],
-                datasets: [{
-                    label: 'Ingresos ($)',
-                    data: [
-                        {{ ingresos.hoy|default(0.0)|float|round(2) }},
-                        {{ ingresos.semana|default(0.0)|float|round(2) }},
-                        {{ ingresos.mes|default(0.0)|float|round(2) }},
-                        {{ ingresos.ano|default(0.0)|float|round(2) }}
-                    ],
-                    backgroundColor: [
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(255, 206, 86, 0.6)',
-                        'rgba(153, 102, 255, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(153, 102, 255, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Ingresos ($)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Período'
-                        }
+        let chartIngresos;
+
+        function updateChart(filter = 'total') {
+            const url = '{{ url_for('admin.admin_dashboard') }}?tipo_filtro=' + filter;
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(response => response.json())
+                .then(data => {
+                    const labels = ['Hoy', 'Semana', 'Mes', 'Año'];
+                    const datasets = [{
+                        label: 'Ingresos ($)',
+                        data: [data.hoy, data.semana, data.mes, data.ano],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(255, 206, 86, 0.6)',
+                            'rgba(153, 102, 255, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }];
+
+                    if (chartIngresos) {
+                        chartIngresos.destroy();
                     }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
+
+                    chartIngresos = new Chart(document.getElementById('chartIngresos').getContext('2d'), {
+                        type: 'bar',
+                        data: { labels, datasets },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Ingresos ($)' }
+                                },
+                                x: { title: { display: true, text: 'Período' } }
+                            },
+                            plugins: {
+                                legend: { display: true, position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) label += ': ';
+                                            return label + new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(context.raw);
+                                        }
+                                    }
                                 }
-                                label += new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(context.raw);
-                                return label;
                             }
                         }
-                    }
-                }
-            }
+                    });
+                });
+        }
+
+        // Event listeners
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateChart(btn.getAttribute('data-filter'));
+            });
         });
+
+        // Inicializar gráfica
+        updateChart('{{ tipo_filtro if tipo_filtro else "total" }}');
     </script>
 {% endblock %}
