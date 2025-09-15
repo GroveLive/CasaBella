@@ -2,6 +2,7 @@
 {% block title %}Panel Admin - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.min.css">
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
@@ -46,9 +47,33 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-secondary mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Stock Total</h5>
+                        <p class="card-text">{{ stock_total }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-danger mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Stock Bajo</h5>
+                        <p class="card-text">{{ stock_bajo }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-dark mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Movimientos Recientes</h5>
+                        <p class="card-text">{{ movimientos_recientes }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="row mt-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Usuarios</h5>
@@ -56,7 +81,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Productos</h5>
@@ -64,7 +89,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Ingresos</h5>
@@ -73,5 +98,84 @@
                 </div>
             </div>
         </div>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Ingresos Totales</h5>
+                        <canvas id="chartIngresos"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        const ctxIngresos = document.getElementById('chartIngresos').getContext('2d');
+        new Chart(ctxIngresos, {
+            type: 'bar',
+            data: {
+                labels: ['Hoy', 'Semana', 'Mes', 'Año'],
+                datasets: [{
+                    label: 'Ingresos ($)',
+                    data: [
+                        {{ ingresos.hoy|default(0.0)|float|round(2) }},
+                        {{ ingresos.semana|default(0.0)|float|round(2) }},
+                        {{ ingresos.mes|default(0.0)|float|round(2) }},
+                        {{ ingresos.ano|default(0.0)|float|round(2) }}
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Ingresos ($)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Período'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(context.raw);
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 {% endblock %}

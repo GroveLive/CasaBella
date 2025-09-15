@@ -6,9 +6,9 @@ from app.models.categorias import Categoria
 from app.models.servicios import Servicio
 from app.models.citas import Cita
 from app.models.asignaciones import Asignacion
+from app.models.inventario_movimientos import InventarioMovimiento
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
-from app.models.inventario_movimientos import InventarioMovimiento
 from flask_login import login_required, current_user
 import logging
 from sqlalchemy import func
@@ -26,11 +26,97 @@ def admin_dashboard():
     if current_user.rol != 'admin':
         flash("Acceso denegado. Solo para administradores.", "danger")
         return redirect(url_for('auth.login'))
+    
+    # Contadores básicos
     usuarios_count = Usuario.query.count()
     productos_count = Producto.query.count()
     servicios_count = Servicio.query.count()
     citas_pendientes_count = Cita.query.filter_by(estado='pendiente').count()
-    return render_template('dashboard_admin.html', usuarios_count=usuarios_count, productos_count=productos_count, servicios_count=servicios_count, citas_pendientes_count=citas_pendientes_count)
+
+    # Fechas actuales
+    today = datetime.now().date()
+    start_week = today - timedelta(days=today.weekday())  # Inicio de la semana (lunes)
+    start_month = today.replace(day=1)
+    start_year = today.replace(month=1, day=1)
+
+    # Inicializar diccionarios con valores por defecto
+    ingresos = {'hoy': 0.0, 'semana': 0.0, 'mes': 0.0, 'ano': 0.0}
+    ingresos_productos = {'hoy': 0.0, 'semana': 0.0, 'mes': 0.0, 'ano': 0.0}
+    ingresos_servicios = {'hoy': 0.0, 'semana': 0.0, 'mes': 0.0, 'ano': 0.0}
+
+    # Métricas de inventario
+    stock_total = Producto.query.with_entities(func.sum(Producto.stock)).scalar() or 0
+    stock_bajo = Producto.query.filter(Producto.stock <= Producto.stock_minimo).count()
+    movimientos_recientes = InventarioMovimiento.query.filter(
+        InventarioMovimiento.fecha_movimiento >= (datetime.now() - timedelta(days=7))
+    ).count()
+
+    try:
+        # Calcular ingresos por productos con join explícito
+        ingresos_productos_query = db.session.query(
+            func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)).label('total')
+        ).join(InventarioMovimiento, InventarioMovimiento.id_producto == Producto.id_producto).filter(
+            InventarioMovimiento.tipo_movimiento == 'salida'
+        )
+        ingresos_productos['hoy'] = ingresos_productos_query.filter(
+            func.date(InventarioMovimiento.fecha_movimiento) == today
+        ).scalar() or 0.0
+        ingresos_productos['semana'] = ingresos_productos_query.filter(
+            func.date(InventarioMovimiento.fecha_movimiento).between(start_week, today)
+        ).scalar() or 0.0
+        ingresos_productos['mes'] = ingresos_productos_query.filter(
+            func.date(InventarioMovimiento.fecha_movimiento).between(start_month, today)
+        ).scalar() or 0.0
+        ingresos_productos['ano'] = ingresos_productos_query.filter(
+            func.date(InventarioMovimiento.fecha_movimiento).between(start_year, today)
+        ).scalar() or 0.0
+
+        # Calcular ingresos por servicios con join explícito
+        ingresos_servicios_query = db.session.query(
+            func.sum(Servicio.precio).label('total')
+        ).join(Cita, Cita.id_servicio == Servicio.id_servicio).filter(
+            Cita.estado == 'completada'
+        )
+        ingresos_servicios['hoy'] = ingresos_servicios_query.filter(
+            func.date(Cita.fecha_hora) == today
+        ).scalar() or 0.0
+        ingresos_servicios['semana'] = ingresos_servicios_query.filter(
+            func.date(Cita.fecha_hora).between(start_week, today)
+        ).scalar() or 0.0
+        ingresos_servicios['mes'] = ingresos_servicios_query.filter(
+            func.date(Cita.fecha_hora).between(start_month, today)
+        ).scalar() or 0.0
+        ingresos_servicios['ano'] = ingresos_servicios_query.filter(
+            func.date(Cita.fecha_hora).between(start_year, today)
+        ).scalar() or 0.0
+
+        # Calcular ingresos totales
+        ingresos = {
+            'hoy': ingresos_productos['hoy'] + ingresos_servicios['hoy'],
+            'semana': ingresos_productos['semana'] + ingresos_servicios['semana'],
+            'mes': ingresos_productos['mes'] + ingresos_servicios['mes'],
+            'ano': ingresos_productos['ano'] + ingresos_servicios['ano']
+        }
+
+        logger.debug(f"Ingresos calculados: {ingresos}")
+        logger.debug(f"Inventario - Stock total: {stock_total}, Stock bajo: {stock_bajo}, Movimientos recientes: {movimientos_recientes}")
+
+    except Exception as e:
+        logger.error(f"Error al calcular ingresos o inventario: {str(e)}")
+        # Mantener valores por defecto en caso de error
+
+    return render_template('dashboard_admin.html', 
+                          usuarios_count=usuarios_count, 
+                          productos_count=productos_count, 
+                          servicios_count=servicios_count, 
+                          citas_pendientes_count=citas_pendientes_count,
+                          ingresos=ingresos,
+                          ingresos_productos=ingresos_productos,
+                          ingresos_servicios=ingresos_servicios,
+                          stock_total=stock_total,
+                          stock_bajo=stock_bajo,
+                          movimientos_recientes=movimientos_recientes,
+                          user=current_user)
 
 @bp.route('/gestion_usuarios')
 @login_required
@@ -420,22 +506,26 @@ def gestion_ingresos():
     try:
         ingresos_productos = {
             'hoy': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
-                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .join(InventarioMovimiento)
+                .filter(InventarioMovimiento.id_producto == Producto.id_producto)
                 .filter(InventarioMovimiento.tipo_movimiento == 'salida')
                 .filter(func.date(InventarioMovimiento.fecha_movimiento) == today)
                 .scalar() or 0.0,
             'semana': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
-                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .join(InventarioMovimiento)
+                .filter(InventarioMovimiento.id_producto == Producto.id_producto)
                 .filter(InventarioMovimiento.tipo_movimiento == 'salida')
                 .filter(func.date(InventarioMovimiento.fecha_movimiento).between(start_week, today))
                 .scalar() or 0.0,
             'mes': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
-                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .join(InventarioMovimiento)
+                .filter(InventarioMovimiento.id_producto == Producto.id_producto)
                 .filter(InventarioMovimiento.tipo_movimiento == 'salida')
                 .filter(func.date(InventarioMovimiento.fecha_movimiento).between(start_month, today))
                 .scalar() or 0.0,
             'ano': db.session.query(func.sum(Producto.precio * func.abs(InventarioMovimiento.cantidad)))
-                .join(Producto, InventarioMovimiento.id_producto == Producto.id_producto)
+                .join(InventarioMovimiento)
+                .filter(InventarioMovimiento.id_producto == Producto.id_producto)
                 .filter(InventarioMovimiento.tipo_movimiento == 'salida')
                 .filter(func.date(InventarioMovimiento.fecha_movimiento).between(start_year, today))
                 .scalar() or 0.0
@@ -448,22 +538,26 @@ def gestion_ingresos():
     try:
         ingresos_servicios = {
             'hoy': db.session.query(func.sum(Servicio.precio))
-                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .join(Cita)
+                .filter(Cita.id_servicio == Servicio.id_servicio)
                 .filter(Cita.estado == 'completada')
                 .filter(func.date(Cita.fecha_hora) == today)
                 .scalar() or 0.0,
             'semana': db.session.query(func.sum(Servicio.precio))
-                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .join(Cita)
+                .filter(Cita.id_servicio == Servicio.id_servicio)
                 .filter(Cita.estado == 'completada')
                 .filter(func.date(Cita.fecha_hora).between(start_week, today))
                 .scalar() or 0.0,
             'mes': db.session.query(func.sum(Servicio.precio))
-                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .join(Cita)
+                .filter(Cita.id_servicio == Servicio.id_servicio)
                 .filter(Cita.estado == 'completada')
                 .filter(func.date(Cita.fecha_hora).between(start_month, today))
                 .scalar() or 0.0,
             'ano': db.session.query(func.sum(Servicio.precio))
-                .join(Servicio, Cita.id_servicio == Servicio.id_servicio)
+                .join(Cita)
+                .filter(Cita.id_servicio == Servicio.id_servicio)
                 .filter(Cita.estado == 'completada')
                 .filter(func.date(Cita.fecha_hora).between(start_year, today))
                 .scalar() or 0.0
@@ -474,7 +568,6 @@ def gestion_ingresos():
 
     # Determinar el tipo de filtro
     tipo_filtro = request.args.get('tipo_filtro', 'total')
-    titulo_grafica = "Ingresos Totales"
     if tipo_filtro == 'productos':
         ingresos = ingresos_productos
         titulo_grafica = "Ingresos por Productos"
@@ -490,10 +583,16 @@ def gestion_ingresos():
         }
         titulo_grafica = "Ingresos Totales"
 
-    logger.debug(f"Tipo de filtro: {tipo_filtro}, Ingresos: {ingresos}")
+    # Métricas de inventario para esta vista
+    stock_total = Producto.query.with_entities(func.sum(Producto.stock)).scalar() or 0
+    stock_bajo = Producto.query.filter(Producto.stock <= Producto.stock_minimo).count()
+
+    logger.debug(f"Tipo de filtro: {tipo_filtro}, Ingresos: {ingresos}, Stock total: {stock_total}, Stock bajo: {stock_bajo}")
 
     return render_template('gestion_ingresos.html', 
                           ingresos=ingresos, 
                           ingresos_productos=ingresos_productos, 
                           ingresos_servicios=ingresos_servicios, 
-                          titulo_grafica=titulo_grafica)
+                          titulo_grafica=titulo_grafica,
+                          stock_total=stock_total,
+                          stock_bajo=stock_bajo)

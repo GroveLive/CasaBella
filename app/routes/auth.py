@@ -66,13 +66,10 @@ def cliente_dashboard():
         flash("Acceso denegado.", "danger")
         return redirect(url_for('auth.login'))
     return render_template("dashboard_cliente.html", user=current_user, citas=current_user.citas_cliente, ventas=current_user.ventas, reseñas=current_user.reseñas, notificaciones=current_user.notificaciones)
-@bp.route('/dashboard/admin')
+@bp.route('/admin_dashboard')
 @login_required
 def admin_dashboard():
-    if current_user.rol != 'admin':
-        flash("Acceso denegado.", "danger")
-        return redirect(url_for('auth.login'))
-    return render_template("dashboard_admin.html", user=current_user)
+    return redirect(url_for('admin.admin_dashboard'))
 
 @bp.route('/dashboard/empleado')
 @login_required
