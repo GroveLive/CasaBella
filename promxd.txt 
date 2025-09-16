@@ -1,0 +1,2504 @@
+vale ahora quiero volver a al cliente necesito un sistema de resenas del producto con calificacion obviamente a y que cliente pueda guardar productos a favoritos osea en guardados te recuerdo la base de datos --
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.4
+
+-- Started on 2025-08-20 14:02:09
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 902 (class 1247 OID 24638)
+-- Name: estado_carrito_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.estado_carrito_enum AS ENUM (
+    'activo',
+    'completado',
+    'abandonado'
+);
+
+
+ALTER TYPE public.estado_carrito_enum OWNER TO postgres;
+
+--
+-- TOC entry 890 (class 1247 OID 24608)
+-- Name: estado_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.estado_enum AS ENUM (
+    'pendiente',
+    'confirmada',
+    'cancelada',
+    'completada'
+);
+
+
+ALTER TYPE public.estado_enum OWNER TO postgres;
+
+--
+-- TOC entry 899 (class 1247 OID 24632)
+-- Name: estado_pago_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.estado_pago_enum AS ENUM (
+    'completado',
+    'pendiente'
+);
+
+
+ALTER TYPE public.estado_pago_enum OWNER TO postgres;
+
+--
+-- TOC entry 887 (class 1247 OID 24600)
+-- Name: estado_producto_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.estado_producto_enum AS ENUM (
+    'activo',
+    'inactivo',
+    'en_promocion'
+);
+
+
+ALTER TYPE public.estado_producto_enum OWNER TO postgres;
+
+--
+-- TOC entry 881 (class 1247 OID 24586)
+-- Name: estado_servicio_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.estado_servicio_enum AS ENUM (
+    'activo',
+    'inactivo',
+    'en_promocion'
+);
+
+
+ALTER TYPE public.estado_servicio_enum OWNER TO postgres;
+
+--
+-- TOC entry 896 (class 1247 OID 24624)
+-- Name: metodo_pago_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.metodo_pago_enum AS ENUM (
+    'efectivo',
+    'tarjeta',
+    'transferencia'
+);
+
+
+ALTER TYPE public.metodo_pago_enum OWNER TO postgres;
+
+--
+-- TOC entry 878 (class 1247 OID 24578)
+-- Name: role_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.role_enum AS ENUM (
+    'cliente',
+    'admin',
+    'empleado'
+);
+
+
+ALTER TYPE public.role_enum OWNER TO postgres;
+
+--
+-- TOC entry 884 (class 1247 OID 24594)
+-- Name: tipo_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.tipo_enum AS ENUM (
+    'cosmético',
+    'joya'
+);
+
+
+ALTER TYPE public.tipo_enum OWNER TO postgres;
+
+--
+-- TOC entry 893 (class 1247 OID 24618)
+-- Name: tipo_movimiento_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.tipo_movimiento_enum AS ENUM (
+    'entrada',
+    'salida'
+);
+
+
+ALTER TYPE public.tipo_movimiento_enum OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 249 (class 1259 OID 25185)
+-- Name: alembic_version; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.alembic_version (
+    version_num character varying(32) NOT NULL
+);
+
+
+ALTER TABLE public.alembic_version OWNER TO postgres;
+
+--
+-- TOC entry 244 (class 1259 OID 24840)
+-- Name: asignaciones; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.asignaciones (
+    id_asignacion integer NOT NULL,
+    id_cita integer,
+    id_empleado integer,
+    fecha_asignacion timestamp without time zone,
+    notas text
+);
+
+
+ALTER TABLE public.asignaciones OWNER TO postgres;
+
+--
+-- TOC entry 243 (class 1259 OID 24839)
+-- Name: asignaciones_id_asignacion_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.asignaciones_id_asignacion_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.asignaciones_id_asignacion_seq OWNER TO postgres;
+
+--
+-- TOC entry 3637 (class 0 OID 0)
+-- Dependencies: 243
+-- Name: asignaciones_id_asignacion_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.asignaciones_id_asignacion_seq OWNED BY public.asignaciones.id_asignacion;
+
+
+--
+-- TOC entry 232 (class 1259 OID 24739)
+-- Name: carrito; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.carrito (
+    id_carrito integer NOT NULL,
+    id_usuario integer,
+    fecha_creacion timestamp without time zone,
+    estado public.estado_carrito_enum
+);
+
+
+ALTER TABLE public.carrito OWNER TO postgres;
+
+--
+-- TOC entry 231 (class 1259 OID 24738)
+-- Name: carrito_id_carrito_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.carrito_id_carrito_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.carrito_id_carrito_seq OWNER TO postgres;
+
+--
+-- TOC entry 3638 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: carrito_id_carrito_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.carrito_id_carrito_seq OWNED BY public.carrito.id_carrito;
+
+
+--
+-- TOC entry 222 (class 1259 OID 24666)
+-- Name: categorias; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.categorias (
+    id_categoria integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    descripcion text
+);
+
+
+ALTER TABLE public.categorias OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 24665)
+-- Name: categorias_id_categoria_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.categorias_id_categoria_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.categorias_id_categoria_seq OWNER TO postgres;
+
+--
+-- TOC entry 3639 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: categorias_id_categoria_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.categorias_id_categoria_seq OWNED BY public.categorias.id_categoria;
+
+
+--
+-- TOC entry 226 (class 1259 OID 24689)
+-- Name: citas; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.citas (
+    id_cita integer NOT NULL,
+    id_usuario integer,
+    id_empleado integer,
+    id_servicio integer,
+    fecha_hora timestamp without time zone NOT NULL,
+    estado public.estado_enum,
+    notas text
+);
+
+
+ALTER TABLE public.citas OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 24688)
+-- Name: citas_id_cita_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.citas_id_cita_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.citas_id_cita_seq OWNER TO postgres;
+
+--
+-- TOC entry 3640 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: citas_id_cita_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.citas_id_cita_seq OWNED BY public.citas.id_cita;
+
+
+--
+-- TOC entry 246 (class 1259 OID 24859)
+-- Name: detalle_carrito; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.detalle_carrito (
+    id_detalle_carrito integer NOT NULL,
+    id_carrito integer,
+    id_producto integer,
+    id_servicio integer,
+    cantidad integer NOT NULL,
+    precio_unitario numeric(10,2) NOT NULL
+);
+
+
+ALTER TABLE public.detalle_carrito OWNER TO postgres;
+
+--
+-- TOC entry 245 (class 1259 OID 24858)
+-- Name: detalle_carrito_id_detalle_carrito_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.detalle_carrito_id_detalle_carrito_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalle_carrito_id_detalle_carrito_seq OWNER TO postgres;
+
+--
+-- TOC entry 3641 (class 0 OID 0)
+-- Dependencies: 245
+-- Name: detalle_carrito_id_detalle_carrito_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.detalle_carrito_id_detalle_carrito_seq OWNED BY public.detalle_carrito.id_detalle_carrito;
+
+
+--
+-- TOC entry 234 (class 1259 OID 24751)
+-- Name: detalle_ventas; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.detalle_ventas (
+    id_detalle integer NOT NULL,
+    id_venta integer,
+    id_producto integer,
+    id_servicio integer,
+    cantidad integer NOT NULL,
+    precio_unitario numeric(10,2) NOT NULL
+);
+
+
+ALTER TABLE public.detalle_ventas OWNER TO postgres;
+
+--
+-- TOC entry 233 (class 1259 OID 24750)
+-- Name: detalle_ventas_id_detalle_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.detalle_ventas_id_detalle_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalle_ventas_id_detalle_seq OWNER TO postgres;
+
+--
+-- TOC entry 3642 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: detalle_ventas_id_detalle_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.detalle_ventas_id_detalle_seq OWNED BY public.detalle_ventas.id_detalle;
+
+
+--
+-- TOC entry 248 (class 1259 OID 24881)
+-- Name: guardados; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.guardados (
+    id_guardado integer NOT NULL,
+    id_usuario integer,
+    id_producto integer,
+    id_servicio integer,
+    fecha_guardado timestamp without time zone
+);
+
+
+ALTER TABLE public.guardados OWNER TO postgres;
+
+--
+-- TOC entry 247 (class 1259 OID 24880)
+-- Name: guardados_id_guardado_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.guardados_id_guardado_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.guardados_id_guardado_seq OWNER TO postgres;
+
+--
+-- TOC entry 3643 (class 0 OID 0)
+-- Dependencies: 247
+-- Name: guardados_id_guardado_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.guardados_id_guardado_seq OWNED BY public.guardados.id_guardado;
+
+
+--
+-- TOC entry 236 (class 1259 OID 24773)
+-- Name: inventario_movimientos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.inventario_movimientos (
+    id_movimiento integer NOT NULL,
+    id_producto integer,
+    tipo_movimiento public.tipo_movimiento_enum NOT NULL,
+    cantidad integer NOT NULL,
+    fecha_movimiento timestamp without time zone,
+    motivo character varying(255)
+);
+
+
+ALTER TABLE public.inventario_movimientos OWNER TO postgres;
+
+--
+-- TOC entry 235 (class 1259 OID 24772)
+-- Name: inventario_movimientos_id_movimiento_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.inventario_movimientos_id_movimiento_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.inventario_movimientos_id_movimiento_seq OWNER TO postgres;
+
+--
+-- TOC entry 3644 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: inventario_movimientos_id_movimiento_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.inventario_movimientos_id_movimiento_seq OWNED BY public.inventario_movimientos.id_movimiento;
+
+
+--
+-- TOC entry 230 (class 1259 OID 24725)
+-- Name: notificaciones; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.notificaciones (
+    id_notificacion integer NOT NULL,
+    id_usuario integer,
+    mensaje text NOT NULL,
+    tipo public.tipo_enum NOT NULL,
+    fecha_envio timestamp without time zone,
+    leida boolean
+);
+
+
+ALTER TABLE public.notificaciones OWNER TO postgres;
+
+--
+-- TOC entry 229 (class 1259 OID 24724)
+-- Name: notificaciones_id_notificacion_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.notificaciones_id_notificacion_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.notificaciones_id_notificacion_seq OWNER TO postgres;
+
+--
+-- TOC entry 3645 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: notificaciones_id_notificacion_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.notificaciones_id_notificacion_seq OWNED BY public.notificaciones.id_notificacion;
+
+
+--
+-- TOC entry 242 (class 1259 OID 24828)
+-- Name: pagos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pagos (
+    id_pago integer NOT NULL,
+    id_venta integer,
+    metodo_pago public.metodo_pago_enum NOT NULL,
+    monto numeric(10,2) NOT NULL,
+    fecha_pago timestamp without time zone,
+    estado public.estado_pago_enum
+);
+
+
+ALTER TABLE public.pagos OWNER TO postgres;
+
+--
+-- TOC entry 241 (class 1259 OID 24827)
+-- Name: pagos_id_pago_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pagos_id_pago_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pagos_id_pago_seq OWNER TO postgres;
+
+--
+-- TOC entry 3646 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: pagos_id_pago_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pagos_id_pago_seq OWNED BY public.pagos.id_pago;
+
+
+--
+-- TOC entry 224 (class 1259 OID 24675)
+-- Name: productos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.productos (
+    id_producto integer NOT NULL,
+    id_categoria integer,
+    nombre character varying(100) NOT NULL,
+    descripcion text,
+    tipo public.tipo_enum NOT NULL,
+    precio numeric(10,2) NOT NULL,
+    stock integer NOT NULL,
+    stock_minimo integer,
+    estado public.estado_producto_enum,
+    imagen_url text,
+    fecha_creacion timestamp without time zone
+);
+
+
+ALTER TABLE public.productos OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 24674)
+-- Name: productos_id_producto_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.productos_id_producto_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.productos_id_producto_seq OWNER TO postgres;
+
+--
+-- TOC entry 3647 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: productos_id_producto_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.productos_id_producto_seq OWNED BY public.productos.id_producto;
+
+
+--
+-- TOC entry 238 (class 1259 OID 24785)
+-- Name: promociones; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.promociones (
+    id_promocion integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    descripcion text,
+    descuento numeric(10,2),
+    fecha_inicio timestamp without time zone NOT NULL,
+    fecha_fin timestamp without time zone NOT NULL,
+    id_servicio integer,
+    id_producto integer
+);
+
+
+ALTER TABLE public.promociones OWNER TO postgres;
+
+--
+-- TOC entry 237 (class 1259 OID 24784)
+-- Name: promociones_id_promocion_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.promociones_id_promocion_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.promociones_id_promocion_seq OWNER TO postgres;
+
+--
+-- TOC entry 3648 (class 0 OID 0)
+-- Dependencies: 237
+-- Name: promociones_id_promocion_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.promociones_id_promocion_seq OWNED BY public.promociones.id_promocion;
+
+
+--
+-- TOC entry 240 (class 1259 OID 24804)
+-- Name: reseñas; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."reseñas" (
+    id_resena integer NOT NULL,
+    id_usuario integer,
+    id_servicio integer,
+    id_producto integer,
+    calificacion integer NOT NULL,
+    comentario text,
+    fecha_resena timestamp without time zone
+);
+
+
+ALTER TABLE public."reseñas" OWNER TO postgres;
+
+--
+-- TOC entry 239 (class 1259 OID 24803)
+-- Name: reseñas_id_resena_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."reseñas_id_resena_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."reseñas_id_resena_seq" OWNER TO postgres;
+
+--
+-- TOC entry 3649 (class 0 OID 0)
+-- Dependencies: 239
+-- Name: reseñas_id_resena_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."reseñas_id_resena_seq" OWNED BY public."reseñas".id_resena;
+
+
+--
+-- TOC entry 220 (class 1259 OID 24657)
+-- Name: servicios; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.servicios (
+    id_servicio integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    descripcion text,
+    precio numeric(10,2) NOT NULL,
+    duracion integer NOT NULL,
+    estado public.estado_servicio_enum,
+    imagen_url text,
+    fecha_creacion timestamp without time zone
+);
+
+
+ALTER TABLE public.servicios OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 24656)
+-- Name: servicios_id_servicio_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.servicios_id_servicio_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.servicios_id_servicio_seq OWNER TO postgres;
+
+--
+-- TOC entry 3650 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: servicios_id_servicio_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.servicios_id_servicio_seq OWNED BY public.servicios.id_servicio;
+
+
+--
+-- TOC entry 218 (class 1259 OID 24646)
+-- Name: usuarios; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.usuarios (
+    id_usuario integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    email character varying(100) NOT NULL,
+    "contraseña" character varying(255) NOT NULL,
+    rol public.role_enum NOT NULL,
+    telefono character varying(15),
+    especialidad character varying(100),
+    fecha_registro timestamp without time zone
+);
+
+
+ALTER TABLE public.usuarios OWNER TO postgres;
+
+--
+-- TOC entry 217 (class 1259 OID 24645)
+-- Name: usuarios_id_usuario_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.usuarios_id_usuario_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.usuarios_id_usuario_seq OWNER TO postgres;
+
+--
+-- TOC entry 3651 (class 0 OID 0)
+-- Dependencies: 217
+-- Name: usuarios_id_usuario_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.usuarios_id_usuario_seq OWNED BY public.usuarios.id_usuario;
+
+
+--
+-- TOC entry 228 (class 1259 OID 24713)
+-- Name: ventas; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ventas (
+    id_venta integer NOT NULL,
+    id_usuario integer,
+    fecha_venta timestamp without time zone,
+    total numeric(10,2) NOT NULL
+);
+
+
+ALTER TABLE public.ventas OWNER TO postgres;
+
+--
+-- TOC entry 227 (class 1259 OID 24712)
+-- Name: ventas_id_venta_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ventas_id_venta_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ventas_id_venta_seq OWNER TO postgres;
+
+--
+-- TOC entry 3652 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: ventas_id_venta_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ventas_id_venta_seq OWNED BY public.ventas.id_venta;
+
+
+--
+-- TOC entry 3390 (class 2604 OID 24843)
+-- Name: asignaciones id_asignacion; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.asignaciones ALTER COLUMN id_asignacion SET DEFAULT nextval('public.asignaciones_id_asignacion_seq'::regclass);
+
+
+--
+-- TOC entry 3384 (class 2604 OID 24742)
+-- Name: carrito id_carrito; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.carrito ALTER COLUMN id_carrito SET DEFAULT nextval('public.carrito_id_carrito_seq'::regclass);
+
+
+--
+-- TOC entry 3379 (class 2604 OID 24669)
+-- Name: categorias id_categoria; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.categorias ALTER COLUMN id_categoria SET DEFAULT nextval('public.categorias_id_categoria_seq'::regclass);
+
+
+--
+-- TOC entry 3381 (class 2604 OID 24692)
+-- Name: citas id_cita; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.citas ALTER COLUMN id_cita SET DEFAULT nextval('public.citas_id_cita_seq'::regclass);
+
+
+--
+-- TOC entry 3391 (class 2604 OID 24862)
+-- Name: detalle_carrito id_detalle_carrito; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_carrito ALTER COLUMN id_detalle_carrito SET DEFAULT nextval('public.detalle_carrito_id_detalle_carrito_seq'::regclass);
+
+
+--
+-- TOC entry 3385 (class 2604 OID 24754)
+-- Name: detalle_ventas id_detalle; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_ventas ALTER COLUMN id_detalle SET DEFAULT nextval('public.detalle_ventas_id_detalle_seq'::regclass);
+
+
+--
+-- TOC entry 3392 (class 2604 OID 24884)
+-- Name: guardados id_guardado; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.guardados ALTER COLUMN id_guardado SET DEFAULT nextval('public.guardados_id_guardado_seq'::regclass);
+
+
+--
+-- TOC entry 3386 (class 2604 OID 24776)
+-- Name: inventario_movimientos id_movimiento; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.inventario_movimientos ALTER COLUMN id_movimiento SET DEFAULT nextval('public.inventario_movimientos_id_movimiento_seq'::regclass);
+
+
+--
+-- TOC entry 3383 (class 2604 OID 24728)
+-- Name: notificaciones id_notificacion; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notificaciones ALTER COLUMN id_notificacion SET DEFAULT nextval('public.notificaciones_id_notificacion_seq'::regclass);
+
+
+--
+-- TOC entry 3389 (class 2604 OID 24831)
+-- Name: pagos id_pago; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pagos ALTER COLUMN id_pago SET DEFAULT nextval('public.pagos_id_pago_seq'::regclass);
+
+
+--
+-- TOC entry 3380 (class 2604 OID 24678)
+-- Name: productos id_producto; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.productos ALTER COLUMN id_producto SET DEFAULT nextval('public.productos_id_producto_seq'::regclass);
+
+
+--
+-- TOC entry 3387 (class 2604 OID 24788)
+-- Name: promociones id_promocion; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promociones ALTER COLUMN id_promocion SET DEFAULT nextval('public.promociones_id_promocion_seq'::regclass);
+
+
+--
+-- TOC entry 3388 (class 2604 OID 24807)
+-- Name: reseñas id_resena; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."reseñas" ALTER COLUMN id_resena SET DEFAULT nextval('public."reseñas_id_resena_seq"'::regclass);
+
+
+--
+-- TOC entry 3378 (class 2604 OID 24660)
+-- Name: servicios id_servicio; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.servicios ALTER COLUMN id_servicio SET DEFAULT nextval('public.servicios_id_servicio_seq'::regclass);
+
+
+--
+-- TOC entry 3377 (class 2604 OID 24649)
+-- Name: usuarios id_usuario; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios ALTER COLUMN id_usuario SET DEFAULT nextval('public.usuarios_id_usuario_seq'::regclass);
+
+
+--
+-- TOC entry 3382 (class 2604 OID 24716)
+-- Name: ventas id_venta; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ventas ALTER COLUMN id_venta SET DEFAULT nextval('public.ventas_id_venta_seq'::regclass);
+
+
+--
+-- TOC entry 3631 (class 0 OID 25185)
+-- Dependencies: 249
+-- Data for Name: alembic_version; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.alembic_version (version_num) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3626 (class 0 OID 24840)
+-- Dependencies: 244
+-- Data for Name: asignaciones; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.asignaciones (id_asignacion, id_cita, id_empleado, fecha_asignacion, notas) FROM stdin;
+1	1	3	2025-08-13 17:21:29.770352	cortele el pelo miamor
+\.
+
+
+--
+-- TOC entry 3614 (class 0 OID 24739)
+-- Dependencies: 232
+-- Data for Name: carrito; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.carrito (id_carrito, id_usuario, fecha_creacion, estado) FROM stdin;
+7	2	2025-08-19 20:01:59.853724	activo
+\.
+
+
+--
+-- TOC entry 3604 (class 0 OID 24666)
+-- Dependencies: 222
+-- Data for Name: categorias; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.categorias (id_categoria, nombre, descripcion) FROM stdin;
+1	unas	todo de unas
+\.
+
+
+--
+-- TOC entry 3608 (class 0 OID 24689)
+-- Dependencies: 226
+-- Data for Name: citas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.citas (id_cita, id_usuario, id_empleado, id_servicio, fecha_hora, estado, notas) FROM stdin;
+1	2	3	1	2027-03-03 15:03:00	confirmada	\N
+2	2	\N	1	2026-03-03 15:33:00	pendiente	\N
+\.
+
+
+--
+-- TOC entry 3628 (class 0 OID 24859)
+-- Dependencies: 246
+-- Data for Name: detalle_carrito; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.detalle_carrito (id_detalle_carrito, id_carrito, id_producto, id_servicio, cantidad, precio_unitario) FROM stdin;
+4	7	1	\N	1	15.99
+\.
+
+
+--
+-- TOC entry 3616 (class 0 OID 24751)
+-- Dependencies: 234
+-- Data for Name: detalle_ventas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.detalle_ventas (id_detalle, id_venta, id_producto, id_servicio, cantidad, precio_unitario) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3630 (class 0 OID 24881)
+-- Dependencies: 248
+-- Data for Name: guardados; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.guardados (id_guardado, id_usuario, id_producto, id_servicio, fecha_guardado) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3618 (class 0 OID 24773)
+-- Dependencies: 236
+-- Data for Name: inventario_movimientos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.inventario_movimientos (id_movimiento, id_producto, tipo_movimiento, cantidad, fecha_movimiento, motivo) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3612 (class 0 OID 24725)
+-- Dependencies: 230
+-- Data for Name: notificaciones; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.notificaciones (id_notificacion, id_usuario, mensaje, tipo, fecha_envio, leida) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3624 (class 0 OID 24828)
+-- Dependencies: 242
+-- Data for Name: pagos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.pagos (id_pago, id_venta, metodo_pago, monto, fecha_pago, estado) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3606 (class 0 OID 24675)
+-- Dependencies: 224
+-- Data for Name: productos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.productos (id_producto, id_categoria, nombre, descripcion, tipo, precio, stock, stock_minimo, estado, imagen_url, fecha_creacion) FROM stdin;
+1	1	esmalte 	esmalte de ajo	cosmético	15.99	10	5	activo	https://surticosmeticosb2c.vtexassets.com/arquivos/ids/173546-800-auto?v=638742744213200000&width=800&height=auto&aspect=true	2025-08-19 19:41:13.554367
+\.
+
+
+--
+-- TOC entry 3620 (class 0 OID 24785)
+-- Dependencies: 238
+-- Data for Name: promociones; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.promociones (id_promocion, nombre, descripcion, descuento, fecha_inicio, fecha_fin, id_servicio, id_producto) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3622 (class 0 OID 24804)
+-- Dependencies: 240
+-- Data for Name: reseñas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."reseñas" (id_resena, id_usuario, id_servicio, id_producto, calificacion, comentario, fecha_resena) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3602 (class 0 OID 24657)
+-- Dependencies: 220
+-- Data for Name: servicios; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.servicios (id_servicio, nombre, descripcion, precio, duracion, estado, imagen_url, fecha_creacion) FROM stdin;
+1	corte	corte	10.00	25	inactivo	https://tahecosmetics.com/trends/wp-content/uploads/2023/02/mohicano-personalizado.jpg	\N
+\.
+
+
+--
+-- TOC entry 3600 (class 0 OID 24646)
+-- Dependencies: 218
+-- Data for Name: usuarios; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.usuarios (id_usuario, nombre, email, "contraseña", rol, telefono, especialidad, fecha_registro) FROM stdin;
+1	Grove	grove@gmail.com	scrypt:32768:8:1$9XJWHE065fRHABVV$42e116b9cb740d9c87ffd5828bb2392ab5a0a21b669371776ae8c26cfb6c0da48b741966132d119a55a5044791f8835ae172e74f06ac64e8e6019029b77f3b38	admin	3125780689	\N	2025-08-11 22:17:17.836006
+2	cliente	cliente@gmail.com	scrypt:32768:8:1$lKYMdIhJHIzUJ75q$2e709c7501ef2574fa2b8b1318edfc2b9271047b308fc406b21f3d7ad09bbecff52370a216657cc22f949d99244144f3ff709e90d8c846680ed7d8cc6f5a1990	cliente	3125780687	\N	2025-08-11 22:17:56.813198
+3	empleado	empleado@gmail.com	scrypt:32768:8:1$pY3pCR5aKiUx62zf$8576beb0418d0772f44549fbed0669581c0322114952fbdd2199a5ab24aac682c38bb7cf6c06e03157075f79558e2c988922f2e45c17468d367a876e0bc9249c	empleado	3125780656	\N	2025-08-13 18:11:32.043261
+\.
+
+
+--
+-- TOC entry 3610 (class 0 OID 24713)
+-- Dependencies: 228
+-- Data for Name: ventas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.ventas (id_venta, id_usuario, fecha_venta, total) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3653 (class 0 OID 0)
+-- Dependencies: 243
+-- Name: asignaciones_id_asignacion_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.asignaciones_id_asignacion_seq', 1, true);
+
+
+--
+-- TOC entry 3654 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: carrito_id_carrito_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.carrito_id_carrito_seq', 7, true);
+
+
+--
+-- TOC entry 3655 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: categorias_id_categoria_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.categorias_id_categoria_seq', 1, false);
+
+
+--
+-- TOC entry 3656 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: citas_id_cita_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.citas_id_cita_seq', 2, true);
+
+
+--
+-- TOC entry 3657 (class 0 OID 0)
+-- Dependencies: 245
+-- Name: detalle_carrito_id_detalle_carrito_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.detalle_carrito_id_detalle_carrito_seq', 4, true);
+
+
+--
+-- TOC entry 3658 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: detalle_ventas_id_detalle_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.detalle_ventas_id_detalle_seq', 1, false);
+
+
+--
+-- TOC entry 3659 (class 0 OID 0)
+-- Dependencies: 247
+-- Name: guardados_id_guardado_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.guardados_id_guardado_seq', 1, false);
+
+
+--
+-- TOC entry 3660 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: inventario_movimientos_id_movimiento_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.inventario_movimientos_id_movimiento_seq', 1, false);
+
+
+--
+-- TOC entry 3661 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: notificaciones_id_notificacion_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.notificaciones_id_notificacion_seq', 1, false);
+
+
+--
+-- TOC entry 3662 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: pagos_id_pago_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pagos_id_pago_seq', 1, false);
+
+
+--
+-- TOC entry 3663 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: productos_id_producto_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.productos_id_producto_seq', 1, true);
+
+
+--
+-- TOC entry 3664 (class 0 OID 0)
+-- Dependencies: 237
+-- Name: promociones_id_promocion_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.promociones_id_promocion_seq', 1, false);
+
+
+--
+-- TOC entry 3665 (class 0 OID 0)
+-- Dependencies: 239
+-- Name: reseñas_id_resena_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."reseñas_id_resena_seq"', 1, false);
+
+
+--
+-- TOC entry 3666 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: servicios_id_servicio_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.servicios_id_servicio_seq', 1, false);
+
+
+--
+-- TOC entry 3667 (class 0 OID 0)
+-- Dependencies: 217
+-- Name: usuarios_id_usuario_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.usuarios_id_usuario_seq', 3, true);
+
+
+--
+-- TOC entry 3668 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: ventas_id_venta_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.ventas_id_venta_seq', 1, false);
+
+
+--
+-- TOC entry 3428 (class 2606 OID 25189)
+-- Name: alembic_version alembic_version_pkc; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.alembic_version
+    ADD CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num);
+
+
+--
+-- TOC entry 3422 (class 2606 OID 24847)
+-- Name: asignaciones asignaciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.asignaciones
+    ADD CONSTRAINT asignaciones_pkey PRIMARY KEY (id_asignacion);
+
+
+--
+-- TOC entry 3410 (class 2606 OID 24744)
+-- Name: carrito carrito_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.carrito
+    ADD CONSTRAINT carrito_pkey PRIMARY KEY (id_carrito);
+
+
+--
+-- TOC entry 3400 (class 2606 OID 24673)
+-- Name: categorias categorias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.categorias
+    ADD CONSTRAINT categorias_pkey PRIMARY KEY (id_categoria);
+
+
+--
+-- TOC entry 3404 (class 2606 OID 24696)
+-- Name: citas citas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.citas
+    ADD CONSTRAINT citas_pkey PRIMARY KEY (id_cita);
+
+
+--
+-- TOC entry 3424 (class 2606 OID 24864)
+-- Name: detalle_carrito detalle_carrito_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_carrito
+    ADD CONSTRAINT detalle_carrito_pkey PRIMARY KEY (id_detalle_carrito);
+
+
+--
+-- TOC entry 3412 (class 2606 OID 24756)
+-- Name: detalle_ventas detalle_ventas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_ventas
+    ADD CONSTRAINT detalle_ventas_pkey PRIMARY KEY (id_detalle);
+
+
+--
+-- TOC entry 3426 (class 2606 OID 24886)
+-- Name: guardados guardados_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.guardados
+    ADD CONSTRAINT guardados_pkey PRIMARY KEY (id_guardado);
+
+
+--
+-- TOC entry 3414 (class 2606 OID 24778)
+-- Name: inventario_movimientos inventario_movimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.inventario_movimientos
+    ADD CONSTRAINT inventario_movimientos_pkey PRIMARY KEY (id_movimiento);
+
+
+--
+-- TOC entry 3408 (class 2606 OID 24732)
+-- Name: notificaciones notificaciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notificaciones
+    ADD CONSTRAINT notificaciones_pkey PRIMARY KEY (id_notificacion);
+
+
+--
+-- TOC entry 3420 (class 2606 OID 24833)
+-- Name: pagos pagos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_pkey PRIMARY KEY (id_pago);
+
+
+--
+-- TOC entry 3402 (class 2606 OID 24682)
+-- Name: productos productos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_pkey PRIMARY KEY (id_producto);
+
+
+--
+-- TOC entry 3416 (class 2606 OID 24792)
+-- Name: promociones promociones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promociones
+    ADD CONSTRAINT promociones_pkey PRIMARY KEY (id_promocion);
+
+
+--
+-- TOC entry 3418 (class 2606 OID 24811)
+-- Name: reseñas reseñas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."reseñas"
+    ADD CONSTRAINT "reseñas_pkey" PRIMARY KEY (id_resena);
+
+
+--
+-- TOC entry 3398 (class 2606 OID 24664)
+-- Name: servicios servicios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.servicios
+    ADD CONSTRAINT servicios_pkey PRIMARY KEY (id_servicio);
+
+
+--
+-- TOC entry 3394 (class 2606 OID 24655)
+-- Name: usuarios usuarios_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 3396 (class 2606 OID 24653)
+-- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_pkey PRIMARY KEY (id_usuario);
+
+
+--
+-- TOC entry 3406 (class 2606 OID 24718)
+-- Name: ventas ventas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT ventas_pkey PRIMARY KEY (id_venta);
+
+
+--
+-- TOC entry 3446 (class 2606 OID 24848)
+-- Name: asignaciones asignaciones_id_cita_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.asignaciones
+    ADD CONSTRAINT asignaciones_id_cita_fkey FOREIGN KEY (id_cita) REFERENCES public.citas(id_cita);
+
+
+--
+-- TOC entry 3447 (class 2606 OID 24853)
+-- Name: asignaciones asignaciones_id_empleado_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.asignaciones
+    ADD CONSTRAINT asignaciones_id_empleado_fkey FOREIGN KEY (id_empleado) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3435 (class 2606 OID 24745)
+-- Name: carrito carrito_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.carrito
+    ADD CONSTRAINT carrito_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3430 (class 2606 OID 24702)
+-- Name: citas citas_id_empleado_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.citas
+    ADD CONSTRAINT citas_id_empleado_fkey FOREIGN KEY (id_empleado) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3431 (class 2606 OID 24707)
+-- Name: citas citas_id_servicio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.citas
+    ADD CONSTRAINT citas_id_servicio_fkey FOREIGN KEY (id_servicio) REFERENCES public.servicios(id_servicio);
+
+
+--
+-- TOC entry 3432 (class 2606 OID 24697)
+-- Name: citas citas_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.citas
+    ADD CONSTRAINT citas_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3448 (class 2606 OID 24865)
+-- Name: detalle_carrito detalle_carrito_id_carrito_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_carrito
+    ADD CONSTRAINT detalle_carrito_id_carrito_fkey FOREIGN KEY (id_carrito) REFERENCES public.carrito(id_carrito);
+
+
+--
+-- TOC entry 3449 (class 2606 OID 24870)
+-- Name: detalle_carrito detalle_carrito_id_producto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_carrito
+    ADD CONSTRAINT detalle_carrito_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
+
+
+--
+-- TOC entry 3450 (class 2606 OID 24875)
+-- Name: detalle_carrito detalle_carrito_id_servicio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_carrito
+    ADD CONSTRAINT detalle_carrito_id_servicio_fkey FOREIGN KEY (id_servicio) REFERENCES public.servicios(id_servicio);
+
+
+--
+-- TOC entry 3436 (class 2606 OID 24762)
+-- Name: detalle_ventas detalle_ventas_id_producto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_ventas
+    ADD CONSTRAINT detalle_ventas_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
+
+
+--
+-- TOC entry 3437 (class 2606 OID 24767)
+-- Name: detalle_ventas detalle_ventas_id_servicio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_ventas
+    ADD CONSTRAINT detalle_ventas_id_servicio_fkey FOREIGN KEY (id_servicio) REFERENCES public.servicios(id_servicio);
+
+
+--
+-- TOC entry 3438 (class 2606 OID 24757)
+-- Name: detalle_ventas detalle_ventas_id_venta_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.detalle_ventas
+    ADD CONSTRAINT detalle_ventas_id_venta_fkey FOREIGN KEY (id_venta) REFERENCES public.ventas(id_venta);
+
+
+--
+-- TOC entry 3451 (class 2606 OID 24892)
+-- Name: guardados guardados_id_producto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.guardados
+    ADD CONSTRAINT guardados_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
+
+
+--
+-- TOC entry 3452 (class 2606 OID 24897)
+-- Name: guardados guardados_id_servicio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.guardados
+    ADD CONSTRAINT guardados_id_servicio_fkey FOREIGN KEY (id_servicio) REFERENCES public.servicios(id_servicio);
+
+
+--
+-- TOC entry 3453 (class 2606 OID 24887)
+-- Name: guardados guardados_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.guardados
+    ADD CONSTRAINT guardados_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3439 (class 2606 OID 24779)
+-- Name: inventario_movimientos inventario_movimientos_id_producto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.inventario_movimientos
+    ADD CONSTRAINT inventario_movimientos_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
+
+
+--
+-- TOC entry 3434 (class 2606 OID 24733)
+-- Name: notificaciones notificaciones_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notificaciones
+    ADD CONSTRAINT notificaciones_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3445 (class 2606 OID 24834)
+-- Name: pagos pagos_id_venta_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_id_venta_fkey FOREIGN KEY (id_venta) REFERENCES public.ventas(id_venta);
+
+
+--
+-- TOC entry 3429 (class 2606 OID 24683)
+-- Name: productos productos_id_categoria_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_id_categoria_fkey FOREIGN KEY (id_categoria) REFERENCES public.categorias(id_categoria);
+
+
+--
+-- TOC entry 3440 (class 2606 OID 24798)
+-- Name: promociones promociones_id_producto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promociones
+    ADD CONSTRAINT promociones_id_producto_fkey FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
+
+
+--
+-- TOC entry 3441 (class 2606 OID 24793)
+-- Name: promociones promociones_id_servicio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promociones
+    ADD CONSTRAINT promociones_id_servicio_fkey FOREIGN KEY (id_servicio) REFERENCES public.servicios(id_servicio);
+
+
+--
+-- TOC entry 3442 (class 2606 OID 24822)
+-- Name: reseñas reseñas_id_producto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."reseñas"
+    ADD CONSTRAINT "reseñas_id_producto_fkey" FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
+
+
+--
+-- TOC entry 3443 (class 2606 OID 24817)
+-- Name: reseñas reseñas_id_servicio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."reseñas"
+    ADD CONSTRAINT "reseñas_id_servicio_fkey" FOREIGN KEY (id_servicio) REFERENCES public.servicios(id_servicio);
+
+
+--
+-- TOC entry 3444 (class 2606 OID 24812)
+-- Name: reseñas reseñas_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."reseñas"
+    ADD CONSTRAINT "reseñas_id_usuario_fkey" FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- TOC entry 3433 (class 2606 OID 24719)
+-- Name: ventas ventas_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT ventas_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+-- Completed on 2025-08-20 14:02:21
+
+--
+-- PostgreSQL database dump complete
+--
+y te recuerdo el client.py from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
+from app import db
+from app.models.servicios import Servicio
+from app.models.productos import Producto
+from app.models.citas import Cita
+from app.models.carrito import Carrito
+from app.models.detalle_carrito import DetalleCarrito
+from app.models.ventas import Venta
+from app.models.detalle_ventas import DetalleVenta
+from app.models.pagos import Pago
+from app.models.inventario_movimientos import InventarioMovimiento
+from app.models.users import Usuario
+from flask_login import login_required, current_user, logout_user
+import logging
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime
+from sqlalchemy.orm import joinedload
+from werkzeug.security import check_password_hash, generate_password_hash
+from decimal import Decimal
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.graphics.shapes import Circle
+from reportlab.graphics import renderPDF
+from reportlab.lib.colors import white
+from reportlab.platypus import SimpleDocTemplate
+from PIL import Image, ImageDraw
+import io
+
+bp = Blueprint('client', __name__, url_prefix='/client')
+
+# Configurar logging básico
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# IVA (16% como estándar, ajustable)
+IVA_RATE = Decimal("0.16")
+
+# Contexto para todas las rutas del cliente
+@bp.context_processor
+def inject_carrito():
+    if current_user.is_authenticated:
+        carrito = Carrito.query.filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+        return dict(carrito=carrito)
+    return dict(carrito=None)
+
+@bp.route('/servicios')
+@login_required
+def servicios():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    servicios = Servicio.query.all()
+    return render_template('servicios.html', servicios=servicios)
+
+@bp.route('/productos')
+@login_required
+def productos():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        productos = Producto.query.all()
+        return render_template('productos.html', productos=productos)
+    except Exception as e:
+        logger.error(f"Error al cargar productos: {str(e)}")
+        flash(f"Ocurrió un error al cargar los productos: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('auth.login'))
+
+@bp.route('/citas')
+@login_required
+def citas():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    servicio_id = request.args.get('servicio_id')
+    servicios = Servicio.query.all()
+    return render_template('citas.html', servicios=servicios, servicio_id=servicio_id)
+
+@bp.route('/agregar_carrito/<int:item_id>', methods=['GET'])
+@login_required
+def agregar_carrito(item_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        logger.debug(f"Intentando agregar item {item_id} para usuario {current_user.id_usuario}")
+        carrito = Carrito.query.filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+        if not carrito:
+            logger.debug(f"No se encontró carrito activo, creando nuevo para id_usuario={current_user.id_usuario}")
+            carrito = Carrito(id_usuario=current_user.id_usuario, estado='activo')
+            db.session.add(carrito)
+            db.session.flush()
+            logger.debug(f"Carrito creado con id_carrito={carrito.id_carrito}")
+        else:
+            logger.debug(f"Carrito existente encontrado con id_carrito={carrito.id_carrito}")
+
+        # Determinar si es producto o servicio
+        producto = Producto.query.get(item_id)
+        servicio = Servicio.query.get(item_id)
+        if producto:
+            if not hasattr(producto, 'precio') or producto.precio is None:
+                raise ValueError("El producto no tiene precio definido.")
+            if not hasattr(producto, 'stock') or producto.stock is None or producto.stock <= 0:
+                flash("No hay stock disponible.", "danger")
+                return redirect(url_for('client.productos'))
+            detalle = DetalleCarrito(
+                id_carrito=carrito.id_carrito,
+                id_producto=item_id,
+                cantidad=1,
+                precio_unitario=producto.precio,
+                id_servicio=None
+            )
+        elif servicio:
+            if not hasattr(servicio, 'precio') or servicio.precio is None:
+                raise ValueError("El servicio no tiene precio definido.")
+            detalle = DetalleCarrito(
+                id_carrito=carrito.id_carrito,
+                id_servicio=item_id,
+                cantidad=1,
+                precio_unitario=servicio.precio,
+                id_producto=None
+            )
+        else:
+            raise ValueError("Item no encontrado o no es un producto ni un servicio.")
+
+        db.session.add(detalle)
+        db.session.flush()
+        logger.debug(f"Detalle creado con id_detalle_carrito={detalle.id_detalle_carrito}")
+        db.session.commit()
+        logger.debug(f"Detalle agregado al carrito {carrito.id_carrito} para item {item_id}")
+        flash("Item agregado al carrito.", "success")
+        return redirect(url_for('client.productos' if producto else 'client.servicios'))
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"Error de integridad al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Item: {item_id}, Carrito: {carrito.id_carrito if carrito else 'None'}")
+        flash("Error de integridad al agregar el item. Verifica los datos e intenta de nuevo.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Item: {item_id}, Carrito: {carrito.id_carrito if 'carrito' in locals() else 'None'}")
+        flash(f"Ocurrió un error al agregar el item al carrito: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.productos' if producto else 'client.servicios'))
+
+@bp.route('/carrito')
+@login_required
+def carrito():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    logger.debug(f"Cargando carrito para usuario: {current_user.id_usuario}")
+    carrito = Carrito.query.options(
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto),
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.servicio)
+    ).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    logger.debug(f"Carrito cargado: {carrito}")
+    if carrito:
+        logger.debug(f"Detalles cargados: {[d.id_detalle_carrito for d in carrito.detalles]}")
+        for detalle in carrito.detalles:
+            logger.debug(f"Detalle {detalle.id_detalle_carrito}: producto = {detalle.producto}, servicio = {detalle.servicio}")
+    else:
+        logger.debug("No se encontró carrito activo")
+    if not carrito:
+        flash("No tienes un carrito activo.", "info")
+    return render_template('carrito.html', carrito=carrito)
+
+@bp.route('/eliminar_del_carrito/<int:detalle_id>', methods=['POST'])
+@login_required
+def eliminar_del_carrito(detalle_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    detalle = DetalleCarrito.query.get_or_404(detalle_id)
+    if detalle.carrito and detalle.carrito.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para eliminar este item.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        db.session.delete(detalle)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Item eliminado del carrito.'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al eliminar del carrito: {str(e)}")
+        return jsonify({'success': False, 'message': f'Ocurrió un error: {str(e)}'}), 500
+
+@bp.route('/actualizar_cantidad/<int:detalle_id>', methods=['POST'])
+@login_required
+def actualizar_cantidad(detalle_id):
+    if current_user.rol != 'cliente':
+        return jsonify({'success': False, 'message': 'Acceso denegado. Solo para clientes.'}), 403
+    detalle = DetalleCarrito.query.get_or_404(detalle_id)
+    if detalle.carrito and detalle.carrito.id_usuario != current_user.id_usuario:
+        return jsonify({'success': False, 'message': 'No tienes permiso para modificar este item.'}), 403
+
+    data = request.get_json()
+    increment = data.get('increment', False)
+    producto = Producto.query.get(detalle.id_producto) if detalle.id_producto else None
+
+    if detalle.id_producto and (not producto or not hasattr(producto, 'stock') or producto.stock is None):
+        return jsonify({'success': False, 'message': 'Producto no disponible o sin stock.'}), 400
+
+    nueva_cantidad = detalle.cantidad
+    if increment:
+        if detalle.id_producto and producto.stock > detalle.cantidad:
+            nueva_cantidad += 1
+        elif not detalle.id_producto or (detalle.id_servicio and nueva_cantidad < 10):  # Límite arbitrario para servicios
+            nueva_cantidad += 1
+        else:
+            return jsonify({'success': False, 'message': 'No hay suficiente stock disponible o límite alcanzado.'}), 400
+    else:
+        if detalle.cantidad > 1:
+            nueva_cantidad -= 1
+        else:
+            return jsonify({'success': False, 'message': 'La cantidad no puede ser menor a 1.'}), 400
+
+    detalle.cantidad = nueva_cantidad
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'cantidad': nueva_cantidad,
+            'precio_unitario': detalle.precio_unitario
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al actualizar cantidad: {str(e)}")
+        return jsonify({'success': False, 'message': f'Ocurrió un error: {str(e)}'}), 500
+
+@bp.route('/procesar_compra', methods=['GET', 'POST'])
+@login_required
+def procesar_compra():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    carrito = Carrito.query.options(
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto),
+        joinedload(Carrito.detalles).joinedload(DetalleCarrito.servicio)
+    ).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+    if not carrito or not carrito.detalles:
+        flash("No tienes items en el carrito para procesar.", "danger")
+        return redirect(url_for('client.carrito'))
+    if request.method == 'POST':
+        try:
+            # Verificar y actualizar stock para productos
+            for detalle in carrito.detalles:
+                if detalle.id_producto:
+                    producto = Producto.query.get(detalle.id_producto)
+                    if producto and (not hasattr(producto, 'stock') or producto.stock is None or producto.stock < detalle.cantidad):
+                        db.session.rollback()
+                        flash("Stock insuficiente para procesar la compra.", "danger")
+                        return redirect(url_for('client.carrito'))
+                    if producto:
+                        producto.stock -= detalle.cantidad
+
+            # Crear la venta
+            subtotal = sum(Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario)) for detalle in carrito.detalles if detalle.id_producto or detalle.id_servicio)
+            iva = subtotal * IVA_RATE
+            total = subtotal + iva
+            venta = Venta(id_usuario=current_user.id_usuario, fecha_venta=datetime.utcnow(), total=total)
+            db.session.add(venta)
+            db.session.commit()
+
+            # Crear detalles de venta basados en el carrito
+            detalles_venta = []
+            for detalle in carrito.detalles:
+                if detalle.id_producto or detalle.id_servicio:
+                    detalle_venta = DetalleVenta(
+                        id_venta=venta.id_venta,
+                        id_producto=detalle.id_producto,
+                        id_servicio=detalle.id_servicio,
+                        cantidad=detalle.cantidad,
+                        precio_unitario=detalle.precio_unitario
+                    )
+                    db.session.add(detalle_venta)
+                    detalles_venta.append(detalle_venta)
+
+            # Crear registro de pago
+            metodo_pago = request.form.get('metodo_pago')
+            if not metodo_pago:
+                raise ValueError("Debe seleccionar un método de pago.")
+            pago = Pago(id_venta=venta.id_venta, metodo_pago=metodo_pago, monto=total)
+            db.session.add(pago)
+
+            # Crear movimientos de inventario solo para productos
+            for detalle in carrito.detalles:
+                if detalle.id_producto:
+                    movimiento = InventarioMovimiento(
+                        id_producto=detalle.id_producto,
+                        tipo_movimiento='salida',
+                        cantidad=detalle.cantidad,
+                        motivo=f'Venta ID: {venta.id_venta}'
+                    )
+                    db.session.add(movimiento)
+
+            # Actualizar estado del carrito y eliminar detalles
+            carrito.estado = 'completado'
+            for detalle in carrito.detalles:
+                db.session.delete(detalle)
+            db.session.commit()
+
+            # Generar factura con ReportLab
+            nombre_archivo = f'factura_{current_user.id_usuario}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+            ruta_archivo = os.path.join(os.path.dirname(__file__), '..', 'static', nombre_archivo)
+            c = canvas.Canvas(ruta_archivo, pagesize=letter)
+            c.setFont("Helvetica-Bold", 16)
+
+            # Logo circular con tamaño ajustado
+            logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
+            if os.path.exists(logo_path):
+                # Create circular clipped image
+                def create_circular_image(image_path, size=80):
+                    img = Image.open(image_path)
+                    img = img.convert("RGBA")
+                    img.thumbnail((size, size), Image.Resampling.LANCZOS)
+                    mask = Image.new('L', (size, size), 0)
+                    draw = ImageDraw.Draw(mask)
+                    draw.ellipse((0, 0, size, size), fill=255)
+                    output = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+                    output.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
+                    output.putalpha(mask)
+                    img_buffer = io.BytesIO()
+                    output.save(img_buffer, format='PNG')
+                    img_buffer.seek(0)
+                    return img_buffer
+                
+                circular_logo = create_circular_image(logo_path, 80)
+                logo_x = 50
+                logo_y = 720
+                logo_size = 80
+                c.drawImage(ImageReader(circular_logo), logo_x, logo_y, logo_size, logo_size)
+
+            c.setFont("Helvetica-Bold", 18)
+            c.drawString(150, 760, "Casa Bella")
+            c.setFont("Helvetica", 14)
+            c.drawString(150, 740, "Salón de Belleza y Distribuidora")
+            
+            c.setStrokeColorRGB(0.2, 0.4, 0.8)
+            c.setLineWidth(2)
+            c.line(50, 710, 550, 710)
+
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, 680, "FACTURA")
+            c.setFont("Helvetica", 10)
+            c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
+            
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(50, 660, "DATOS DEL CLIENTE:")
+            c.setFont("Helvetica", 10)
+            c.drawString(50, 645, f"Nombre: {current_user.nombre}")
+            c.drawString(50, 630, f"Email: {current_user.email or 'No proporcionado'}")
+            c.drawString(50, 615, f"Teléfono: {current_user.telefono or 'No proporcionado'}")
+
+            y = 580
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(50, y, "PRODUCTOS/SERVICIOS:")
+            c.setStrokeColorRGB(0.8, 0.8, 0.8)
+            c.line(50, y-5, 550, y-5)
+            
+            y -= 25
+            c.setFont("Helvetica", 9)
+
+            for detalle in detalles_venta:
+                if detalle.id_producto:
+                    producto = Producto.query.get(detalle.id_producto)
+                    if producto:
+                        subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                        c.drawString(60, y, f"{producto.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                        y -= 20
+                elif detalle.id_servicio:
+                    servicio = Servicio.query.get(detalle.id_servicio)
+                    if servicio:
+                        subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                        c.drawString(60, y, f"{servicio.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                        y -= 20
+
+            c.drawString(50, y-10, "─" * 70)
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(400, y-30, f"Subtotal: ${subtotal.quantize(Decimal('0.01'))}")
+            c.drawString(400, y-45, f"IVA (16%): ${iva.quantize(Decimal('0.01'))}")
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(400, y-65, f"TOTAL: ${total.quantize(Decimal('0.01'))}")
+            
+            c.setFont("Helvetica-Oblique", 10)
+            c.drawString(50, y-100, "¡Gracias por confiar en Casa Bella!")
+            c.drawString(50, y-115, "Tu belleza es nuestra pasión")
+            c.save()
+
+            if not os.path.exists(ruta_archivo):
+                raise FileNotFoundError(f"El archivo {ruta_archivo} no se creó correctamente.")
+
+            flash("Compra procesada con éxito. Descargando factura...", "success")
+            response = send_file(ruta_archivo, as_attachment=True, download_name=nombre_archivo)
+            if os.path.exists(ruta_archivo):
+                os.remove(ruta_archivo)
+            return response
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error al procesar la compra: {str(e)}")
+            flash(f"Ocurrió un error al procesar la compra: {str(e)}. Por favor, intenta de nuevo.", "danger")
+            return redirect(url_for('client.carrito'))
+    return render_template('procesar_compra.html', carrito=carrito)
+
+@bp.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    # Obtener historial de compras con joinedload anidado, manejando casos donde id_usuario puede ser NULL
+    ventas = Venta.query.filter((Venta.id_usuario == current_user.id_usuario) | (Venta.id_usuario == None)).options(
+        joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto)
+    ).all()
+    # Obtener historial de citas
+    citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).all()
+    return render_template('dashboard_cliente.html', ventas=ventas, citas=citas)
+
+@bp.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def perfil():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        try:
+            nuevo_nombre = request.form.get('nombre')
+            nuevo_email = request.form.get('email')
+            nuevo_telefono = request.form.get('telefono')
+            nueva_contraseña = request.form.get('contraseña')
+
+            if nuevo_nombre and nuevo_nombre != current_user.nombre:
+                current_user.nombre = nuevo_nombre
+            if nuevo_email and nuevo_email != current_user.email:
+                current_user.email = nuevo_email
+            if nuevo_telefono and nuevo_telefono != current_user.telefono:
+                current_user.telefono = nuevo_telefono
+            if nueva_contraseña:
+                current_user.contraseña = generate_password_hash(nueva_contraseña)
+
+            current_user.rol = current_user.rol
+            current_user.especialidad = current_user.especialidad
+            current_user.fecha_registro = current_user.fecha_registro
+
+            db.session.commit()
+            flash("Perfil actualizado con éxito.", "success")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error al actualizar perfil: {str(e)}")
+            flash(f"Ocurrió un error al actualizar el perfil: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    # Consultar ventas y citas correctamente
+    ventas = Venta.query.filter((Venta.id_usuario == current_user.id_usuario) | (Venta.id_usuario == None)).options(
+        joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto)
+    ).all()
+    citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).all()
+    return render_template('dashboard_cliente.html', ventas=ventas, citas=citas)
+
+@bp.route('/borrar_perfil', methods=['POST'])
+@login_required
+def borrar_perfil():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    logger.info(f"Intentando borrar perfil del usuario {current_user.id_usuario}")
+    try:
+        usuario = current_user._get_current_object()
+        if usuario.id_usuario != current_user.id_usuario:
+            logger.warning("Intento de borrar un perfil diferente al autenticado")
+            flash("No puedes borrar un perfil que no es el tuyo.", "danger")
+            return redirect(url_for('client.dashboard'))
+        logger.debug(f"Eliminando usuario con id_usuario={usuario.id_usuario}")
+        db.session.delete(usuario)
+        db.session.commit()
+        logger.info(f"Usuario {usuario.id_usuario} eliminado con éxito")
+        logout_user()
+        flash("Perfil borrado. Has sido desconectado.", "success")
+        return redirect(url_for('auth.login'))
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"Error de integridad al borrar perfil: {str(e)} - Usuario: {current_user.id_usuario}")
+        flash("No se puede borrar el perfil porque tiene datos asociados (como ventas o citas). Contacta al administrador.", "danger")
+        return redirect(url_for('client.dashboard'))
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error inesperado al borrar perfil: {str(e)} - Usuario: {current_user.id_usuario}")
+        flash(f"Ocurrió un error al borrar el perfil: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('client.dashboard'))
+
+@bp.route('/descargar_factura/<int:venta_id>', methods=['GET'])
+@login_required
+def descargar_factura(venta_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    venta = Venta.query.get_or_404(venta_id)
+    if venta.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para descargar esta factura.", "danger")
+        return redirect(url_for('client.dashboard'))
+    try:
+        total = venta.total if venta.total else Decimal('0.00')
+        detalles_venta = DetalleVenta.query.filter_by(id_venta=venta_id).options(joinedload(DetalleVenta.producto)).all()
+        subtotal = sum(Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario)) for detalle in detalles_venta)
+        iva = subtotal * IVA_RATE
+
+        nombre_archivo = f'factura_{current_user.id_usuario}_{venta_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        ruta_archivo = os.path.join(os.path.dirname(__file__), '..', 'static', nombre_archivo)
+        c = canvas.Canvas(ruta_archivo, pagesize=letter)
+        c.setFont("Helvetica-Bold", 16)
+
+        # Logo circular con tamaño ajustado
+        logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
+        if os.path.exists(logo_path):
+            # Create circular clipped image (same function as above)
+            def create_circular_image(image_path, size=80):
+                img = Image.open(image_path)
+                img = img.convert("RGBA")
+                img.thumbnail((size, size), Image.Resampling.LANCZOS)
+                
+                mask = Image.new('L', (size, size), 0)
+                draw = ImageDraw.Draw(mask)
+                draw.ellipse((0, 0, size, size), fill=255)
+                
+                output = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+                output.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
+                output.putalpha(mask)
+                
+                img_buffer = io.BytesIO()
+                output.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                return img_buffer
+            
+            circular_logo = create_circular_image(logo_path, 80)
+            logo_x = 50
+            logo_y = 720
+            logo_size = 80
+            c.drawImage(ImageReader(circular_logo), logo_x, logo_y, logo_size, logo_size)
+
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(150, 760, "Casa Bella")
+        c.setFont("Helvetica", 14)
+        c.drawString(150, 740, "Salón de Belleza y Distribuidora")
+        
+        c.setStrokeColorRGB(0.2, 0.4, 0.8)
+        c.setLineWidth(2)
+        c.line(50, 710, 550, 710)
+
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, 680, "FACTURA")
+        c.setFont("Helvetica", 10)
+        c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha'}")
+        
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, 660, "DATOS DEL CLIENTE:")
+        c.setFont("Helvetica", 10)
+        c.drawString(50, 645, f"Nombre: {current_user.nombre}")
+        c.drawString(50, 630, f"Email: {current_user.email or 'No proporcionado'}")
+        c.drawString(50, 615, f"Teléfono: {current_user.telefono or 'No proporcionado'}")
+
+        y = 580
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "PRODUCTOS/SERVICIOS:")
+        c.setStrokeColorRGB(0.8, 0.8, 0.8)
+        c.line(50, y-5, 550, y-5)
+        
+        y -= 25
+        c.setFont("Helvetica", 9)
+
+        for detalle in detalles_venta:
+            if detalle.id_producto:
+                producto = detalle.producto
+                if producto:
+                    subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                    c.drawString(60, y, f"{producto.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                    y -= 20
+            elif detalle.id_servicio:
+                servicio = Servicio.query.get(detalle.id_servicio)
+                if servicio:
+                    subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
+                    c.drawString(60, y, f"{servicio.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                    y -= 20
+
+        c.drawString(50, y-10, "─" * 70)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(400, y-30, f"Subtotal: ${subtotal.quantize(Decimal('0.01'))}")
+        c.drawString(400, y-45, f"IVA (16%): ${iva.quantize(Decimal('0.01'))}")
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(400, y-65, f"TOTAL: ${total.quantize(Decimal('0.01'))}")
+        
+        c.setFont("Helvetica-Oblique", 10)
+        c.drawString(50, y-100, "¡Gracias por confiar en Casa Bella!")
+        c.drawString(50, y-115, "Tu belleza es nuestra pasión")
+        c.save()
+
+        if not os.path.exists(ruta_archivo):
+            raise FileNotFoundError(f"El archivo {ruta_archivo} no se creó correctamente.")
+
+        flash("Descargando factura...", "success")
+        response = send_file(ruta_archivo, as_attachment=True, download_name=nombre_archivo)
+        if os.path.exists(ruta_archivo):
+            os.remove(ruta_archivo)
+        return response
+    except Exception as e:
+        logger.error(f"Error al descargar factura: {str(e)}")
+        flash(f"Ocurrió un error al descargar la factura: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('client.dashboard'))
+
+@bp.route('/borrar_compra/<int:venta_id>', methods=['POST'])
+@login_required
+def borrar_compra(venta_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    venta = Venta.query.get_or_404(venta_id)
+    if venta.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para borrar esta compra.", "danger")
+        return redirect(url_for('client.dashboard'))
+    try:
+        DetalleVenta.query.filter_by(id_venta=venta_id).delete()
+        db.session.delete(venta)
+        db.session.commit()
+        flash("Compra eliminada con éxito.", "success")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al borrar compra: {str(e)}")
+        flash(f"Ocurrió un error al borrar la compra: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.dashboard'))
+
+@bp.route('/borrar_cita/<int:cita_id>', methods=['POST'])
+@login_required
+def borrar_cita(cita_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    cita = Cita.query.get_or_404(cita_id)
+    if cita.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para borrar esta cita.", "danger")
+        return redirect(url_for('client.dashboard'))
+    try:
+        db.session.delete(cita)
+        db.session.commit()
+        flash("Cita eliminada con éxito.", "success")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al borrar cita: {str(e)}")
+        flash(f"Ocurrió un error al borrar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.dashboard'))
+
+# Función auxiliar para generar el contenido LaTeX de la factura (mantendremos por ahora, pero no se usará)
+def generate_factura_latex(carrito, venta):
+    detalles = carrito.detalles
+    total = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles if d.id_producto or d.id_servicio)
+    table_rows = []
+    for detalle in detalles:
+        if detalle.id_producto:
+            producto = Producto.query.get(detalle.id_product)
+            if producto:
+                row = f"{producto.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
+                table_rows.append(row)
+        elif detalle.id_servicio:
+            servicio = Servicio.query.get(detalle.id_servicio)
+            if servicio:
+                row = f"{servicio.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
+                table_rows.append(row)
+    table_content = '\n'.join(table_rows)
+
+    return f"""\\documentclass[a4paper,12pt]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage{{geometry}}
+\\geometry{{a4paper, margin=1in}}
+\\usepackage{{booktabs}}
+\\usepackage{{longtable}}
+\\usepackage{{fancyhdr}}
+\\pagestyle{{fancy}}
+\\fancyhf{{}}
+\\fancyhead[L]{{Factura - Casa Bella}}
+\\fancyfoot[C]{{Página \\thepage}}
+\\usepackage{{amiri}} % Fuente para soporte de caracteres no latinos
+
+\\begin{{document}}
+
+\\begin{{center}}
+\\textbf{{Factura}} \\\\
+\\textbf{{Casa Bella}} \\\\
+Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha'} \\\\
+Cliente: {current_user.nombre} (ID: {current_user.id_usuario}) \\\\
+\\end{{center}}
+
+\\begin{{longtable}}{{lccr}}
+\\toprule
+Producto/Servicio & Cantidad & Precio Unitario & Subtotal \\\\
+\\midrule
+\\endhead
+\\midrule
+\\multicolumn{{4}}{{r}}{{Continúa en la siguiente página}} \\\\
+\\endfoot
+\\bottomrule
+\\endlastfoot
+{table_content}
+\\midrule
+\\multicolumn{{3}}{{r}}{{Total}} & ${total.quantize(Decimal('0.01'))} \\\\
+\\bottomrule
+\\end{{longtable}}
+
+\\end{{document}}
+""".replace('\n', '')
+
+@bp.route('/reservar_cita', methods=['POST'])
+@login_required
+def reservar_cita():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    servicio_id = request.form.get('servicio_id')
+    fecha_hora_str = request.form.get('fecha_hora')
+    if not current_user.is_authenticated or not current_user.id_usuario:
+        flash("Error: Usuario no autenticado correctamente.", "danger")
+        return redirect(url_for('auth.login'))
+
+    try:
+        # Convertir fecha_hora a objeto datetime
+        fecha_hora = datetime.strptime(fecha_hora_str, '%Y-%m-%dT%H:%M')
+
+        # Definir horarios del salón
+        horarios = {
+            0: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Lunes
+            1: {'inicio': datetime.strptime('08:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Martes
+            2: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Miércoles
+            3: None,  # Jueves (CERRADO)
+            4: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Viernes
+            5: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Sábado
+            6: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('18:00', '%H:%M').time()}   # Domingo
+        }
+
+        # Obtener el día de la semana (0 = Lunes, 6 = Domingo)
+        dia_semana = fecha_hora.weekday()
+
+        # Verificar si el día está cerrado
+        if horarios[dia_semana] is None:
+            flash("Hora o día no disponible en el horario. El salón está cerrado este día (Jueves).", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Obtener el horario del día
+        horario_dia = horarios[dia_semana]
+        hora_solicitada = fecha_hora.time()
+
+        # Verificar si la hora está dentro del rango permitido
+        if hora_solicitada < horario_dia['inicio'] or hora_solicitada > horario_dia['fin']:
+            flash("Hora o día no disponible en el horario. Por favor, selecciona una hora dentro del rango permitido.", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Verificar incrementos de 30 minutos (opcional, ajustable)
+        minutos = hora_solicitada.minute
+        if minutos % 30 != 0:
+            flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos (e.g., 9:00, 9:30).", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Verificar si la cita es en el pasado
+        if fecha_hora < datetime.now():
+            flash("No puedes reservar citas en el pasado.", "danger")
+            return redirect(url_for('client.citas'))
+
+        # Crear la cita
+        cita = Cita(
+            id_usuario=current_user.id_usuario,
+            id_servicio=servicio_id,
+            fecha_hora=fecha_hora,
+            estado='pendiente'
+        )
+        db.session.add(cita)
+        db.session.commit()
+        flash("Cita reservada con éxito.", "success")
+    except ValueError as e:
+        db.session.rollback()
+        logger.error(f"Error en el formato de fecha: {str(e)}")
+        flash("Error en el formato de la fecha. Usa YYYY-MM-DDTHH:MM.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al reservar cita: {str(e)}")
+        flash(f"Ocurrió un error al reservar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.citas')) quiero que digamos aqui productos.html abajo aparezca para colocar la calificacion y resena {% extends "base.html" %}
+{% block title %}Productos - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/productos.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Nuestros Productos</h1>
+        <p class="lead mb-4">Explora los productos premium que ofrecemos en Casa Bella.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="row g-4">
+            {% for producto in productos %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card product-card h-100 border-0 shadow-sm">
+                    <div class="card-img-container">
+                        <img src="{{ url_for('static', filename='images/producto_' ~ producto.id_producto ~ '.jpg') if not producto.imagen_url else producto.imagen_url }}" class="card-img-top product-image" alt="{{ producto.nombre }}">
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title text-custom-accent fw-bold">{{ producto.nombre }}</h5>
+                        <p class="card-text flex-grow-1">{{ producto.descripcion or 'Sin descripción' }}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(producto.precio) }}</span>
+                            <span class="badge bg-custom-accent">
+                                <i class="bi bi-box-seam me-1"></i>{{ producto.stock }} en stock
+                            </span>
+                        </div>
+                        <a href="{{ url_for('client.agregar_carrito', item_id=producto.id_producto) }}" class="btn btn-primary mt-auto">
+                            <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if not productos %}
+            <p class="text-center">No hay productos disponibles en este momento.</p>
+        {% endif %}
+    </div>
+{% endblock %} obviamente en esas cards necesito que se selecione un boton para ver las resenas de ese producto osea lo lleva a un modal con los comentarios a y tambien otros boton para dejarlos en guardar a favoritos  el boton de favoritos lo puedes hacer al lado del carrito

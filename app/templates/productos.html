@@ -2,6 +2,14 @@
 {% block title %}Productos - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/productos.css') }}">
+    <style>
+        .favorite-btn {
+            transition: color 0.3s;
+        }
+        .favorite-btn.active {
+            color: #ff4d4d;
+        }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
@@ -30,9 +38,14 @@
                                 <i class="bi bi-box-seam me-1"></i>{{ producto.stock }} en stock
                             </span>
                         </div>
-                        <a href="{{ url_for('client.agregar_carrito', item_id=producto.id_producto) }}" class="btn btn-primary mt-auto">
-                            <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
-                        </a>
+                        <div class="d-flex justify-content-between mt-auto">
+                            <a href="{{ url_for('client.agregar_carrito', item_id=producto.id_producto) }}" class="btn btn-primary">
+                                <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
+                            </a>
+                            <button class="btn btn-outline-secondary favorite-btn" data-product-id="{{ producto.id_producto }}" data-toggle-url="{{ url_for('client.agregar_favorito', producto_id=producto.id_producto) }}" title="Agregar a favoritos">
+                                <i class="bi bi-heart"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -42,4 +55,58 @@
             <p class="text-center">No hay productos disponibles en este momento.</p>
         {% endif %}
     </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Función para verificar si un producto está en favoritos
+            function checkFavoriteStatus(productId, button) {
+                $.get('/client/check_favorito/' + productId, function(data) {
+                    if (data.success && data.is_favorite) {
+                        button.addClass('active');
+                        button.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                    }
+                }).fail(function() {
+                    console.log('Error al verificar estado de favorito');
+                });
+            }
+
+            // Verificar estado inicial para cada botón
+            $('.favorite-btn').each(function() {
+                var productId = $(this).data('product-id');
+                checkFavoriteStatus(productId, $(this));
+            });
+
+            // Manejar clic en botón de favoritos
+            $('.favorite-btn').click(function() {
+                var button = $(this);
+                var productId = button.data('product-id');
+                var toggleUrl = button.data('toggle-url');  // URL pre-generada con el ID
+
+                $.ajax({
+                    url: toggleUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            if (response.added) {
+                                button.addClass('active');
+                                button.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                            } else {
+                                button.removeClass('active');
+                                button.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
+                            }
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('Error AJAX: ' + error);
+                        alert('Error al procesar la solicitud. Por favor, intenta de nuevo.');
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}
