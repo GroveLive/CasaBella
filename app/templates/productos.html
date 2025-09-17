@@ -9,12 +9,23 @@
         .favorite-btn.active {
             color: #ff4d4d;
         }
+        .promotion-badge {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+        }
     </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
         <h1 class="mb-4">Nuestros Productos</h1>
         <p class="lead mb-4">Explora los productos premium que ofrecemos en Casa Bella.</p>
+        <div class="mb-4">
+            <a href="{{ url_for('client.productos') }}" class="btn btn-outline-primary {{ '' if not filter_promotions else 'btn-outline-secondary' }}">Todos los Productos</a>
+            <a href="{{ url_for('client.productos', filter='promotions') }}" class="btn btn-primary {{ 'btn-outline-secondary' if not filter_promotions else '' }}">Solo en Promoción</a>
+        </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -27,13 +38,22 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card product-card h-100 border-0 shadow-sm">
                     <div class="card-img-container">
-                        <img src="{{ url_for('static', filename='images/producto_' ~ producto.id_producto ~ '.jpg') if not producto.imagen_url else producto.imagen_url }}" class="card-img-top product-image" alt="{{ producto.nombre }}">
+                        <img src="{{ url_for('static', filename='images/producto_' ~ producto.id_producto ~ '.jpg') if not producto.imagen_url else producto.imagen_url }}" class="card-img-top product-image" alt="{{ producto.nombre }}" onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}';">
                     </div>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title text-custom-accent fw-bold">{{ producto.nombre }}</h5>
                         <p class="card-text flex-grow-1">{{ producto.descripcion or 'Sin descripción' }}</p>
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(producto.precio) }}</span>
+                            {% set promocion = promociones | selectattr('id_producto', 'equalto', producto.id_producto) | first %}
+                            {% if promocion %}
+                                <div>
+                                    <span class="h4 fw-bold mb-0 text-decoration-line-through">${{ '%0.2f'|format(producto.precio) }}</span>
+                                    <span class="h4 fw-bold mb-0 text-danger">${{ '%0.2f'|format((producto.precio * (1 - (promocion.descuento / 100)))|round(2)) }}</span>
+                                    <span class="promotion-badge ms-2">{{ promocion.descuento }}% OFF</span>
+                                </div>
+                            {% else %}
+                                <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(producto.precio) }}</span>
+                            {% endif %}
                             <span class="badge bg-custom-accent">
                                 <i class="bi bi-box-seam me-1"></i>{{ producto.stock }} en stock
                             </span>
@@ -63,6 +83,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Initialize tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
             // Check favorite status on page load
             $('.favorite-btn').each(function() {
                 var itemType = $(this).data('item-type');

@@ -12,8 +12,9 @@ from app.models.inventario_movimientos import InventarioMovimiento
 from app.models.users import Usuario
 from app.models.reseñas import Reseña
 from app.models.guardados import Guardado
+from app.models.notificaciones import Notificacion
+from app.models.promociones import Promocion
 from flask_login import login_required, current_user, logout_user
-import logging
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from sqlalchemy.orm import joinedload
@@ -29,6 +30,7 @@ from reportlab.lib.colors import white
 from reportlab.platypus import SimpleDocTemplate
 from PIL import Image, ImageDraw
 import io
+import logging
 
 bp = Blueprint('client', __name__, url_prefix='/client')
 
@@ -53,8 +55,21 @@ def servicios():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    servicios = Servicio.query.all()
-    return render_template('servicios.html', servicios=servicios)
+    try:
+        filter_promotions = request.args.get('filter') == 'promotions'
+        now = datetime.utcnow()
+        if filter_promotions:
+            servicios = Servicio.query.join(Promocion, Servicio.id_servicio == Promocion.id_servicio).filter(
+                Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+            ).all()
+        else:
+            servicios = Servicio.query.all()
+        promociones = Promocion.query.filter(Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now).all()
+        return render_template('servicios.html', servicios=servicios, promociones=promociones, filter_promotions=filter_promotions)
+    except Exception as e:
+        logger.error(f"Error al cargar servicios: {str(e)}")
+        flash(f"Ocurrió un error al cargar los servicios: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('auth.login'))
 
 @bp.route('/productos')
 @login_required
@@ -63,8 +78,16 @@ def productos():
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
     try:
-        productos = Producto.query.all()
-        return render_template('productos.html', productos=productos)
+        filter_promotions = request.args.get('filter') == 'promotions'
+        now = datetime.utcnow()
+        if filter_promotions:
+            productos = Producto.query.join(Promocion, Producto.id_producto == Promocion.id_producto).filter(
+                Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+            ).all()
+        else:
+            productos = Producto.query.all()
+        promociones = Promocion.query.filter(Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now).all()
+        return render_template('productos.html', productos=productos, promociones=promociones, filter_promotions=filter_promotions)
     except Exception as e:
         logger.error(f"Error al cargar productos: {str(e)}")
         flash(f"Ocurrió un error al cargar los productos: {str(e)}. Por favor, intenta de nuevo.", "danger")
@@ -101,46 +124,56 @@ def agregar_carrito(item_id):
         # Determinar si es producto o servicio
         producto = Producto.query.get(item_id)
         servicio = Servicio.query.get(item_id)
+        
+        # Verificar promoción activa
+        now = datetime.utcnow()
+        promocion = None
+        precio_unitario = None
         if producto:
             if not hasattr(producto, 'precio') or producto.precio is None:
                 raise ValueError("El producto no tiene precio definido.")
             if not hasattr(producto, 'stock') or producto.stock is None or producto.stock <= 0:
                 flash("No hay stock disponible.", "danger")
                 return redirect(url_for('client.productos'))
-            detalle = DetalleCarrito(
-                id_carrito=carrito.id_carrito,
-                id_producto=item_id,
-                cantidad=1,
-                precio_unitario=producto.precio,
-                id_servicio=None
-            )
+            promocion = Promocion.query.filter_by(id_producto=item_id).filter(
+                Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+            ).first()
+            precio_unitario = producto.precio
+            if promocion:
+                precio_unitario = Decimal(str(producto.precio)) * (1 - Decimal(str(promocion.descuento)) / 100)
         elif servicio:
             if not hasattr(servicio, 'precio') or servicio.precio is None:
                 raise ValueError("El servicio no tiene precio definido.")
-            detalle = DetalleCarrito(
-                id_carrito=carrito.id_carrito,
-                id_servicio=item_id,
-                cantidad=1,
-                precio_unitario=servicio.precio,
-                id_producto=None
-            )
+            promocion = Promocion.query.filter_by(id_servicio=item_id).filter(
+                Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+            ).first()
+            precio_unitario = servicio.precio
+            if promocion:
+                precio_unitario = Decimal(str(servicio.precio)) * (1 - Decimal(str(promocion.descuento)) / 100)
         else:
             raise ValueError("Item no encontrado o no es un producto ni un servicio.")
 
+        detalle = DetalleCarrito(
+            id_carrito=carrito.id_carrito,
+            id_producto=item_id if producto else None,
+            id_servicio=item_id if servicio else None,
+            cantidad=1,
+            precio_unitario=precio_unitario
+        )
         db.session.add(detalle)
         db.session.flush()
         logger.debug(f"Detalle creado con id_detalle_carrito={detalle.id_detalle_carrito}")
         db.session.commit()
         logger.debug(f"Detalle agregado al carrito {carrito.id_carrito} para item {item_id}")
-        flash("Item agregado al carrito.", "success")
+        flash(f"Item agregado al carrito{' con promoción aplicada' if promocion else ''}.", "success")
         return redirect(url_for('client.productos' if producto else 'client.servicios'))
     except IntegrityError as e:
         db.session.rollback()
-        logger.error(f"Error de integridad al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Item: {item_id}, Carrito: {carrito.id_carrito if carrito else 'None'}")
+        logger.error(f"Error de integridad al agregar al carrito: {str(e)}")
         flash("Error de integridad al agregar el item. Verifica los datos e intenta de nuevo.", "danger")
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error al agregar al carrito: {str(e)} - Usuario: {current_user.id_usuario}, Item: {item_id}, Carrito: {carrito.id_carrito if 'carrito' in locals() else 'None'}")
+        logger.error(f"Error al agregar al carrito: {str(e)}")
         flash(f"Ocurrió un error al agregar el item al carrito: {str(e)}. Por favor, intenta de nuevo.", "danger")
     return redirect(url_for('client.productos' if producto else 'client.servicios'))
 
@@ -254,7 +287,7 @@ def procesar_compra():
                     if producto:
                         producto.stock -= detalle.cantidad
 
-            # Crear la venta
+            # Calcular total con descuentos de promociones
             subtotal = sum(Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario)) for detalle in carrito.detalles if detalle.id_producto or detalle.id_servicio)
             iva = subtotal * IVA_RATE
             total = subtotal + iva
@@ -309,7 +342,6 @@ def procesar_compra():
             # Logo circular con tamaño ajustado
             logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
             if os.path.exists(logo_path):
-                # Create circular clipped image
                 def create_circular_image(image_path, size=80):
                     img = Image.open(image_path)
                     img = img.convert("RGBA")
@@ -361,18 +393,31 @@ def procesar_compra():
             y -= 25
             c.setFont("Helvetica", 9)
 
+            now = datetime.utcnow()
             for detalle in detalles_venta:
                 if detalle.id_producto:
                     producto = Producto.query.get(detalle.id_producto)
+                    promocion = Promocion.query.filter_by(id_producto=detalle.id_producto).filter(
+                        Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+                    ).first()
                     if producto:
                         subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
                         c.drawString(60, y, f"{producto.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                        if promocion:
+                            c.drawString(60, y-15, f"Promoción: {promocion.nombre} ({promocion.descuento}% descuento)")
+                            y -= 15
                         y -= 20
                 elif detalle.id_servicio:
                     servicio = Servicio.query.get(detalle.id_servicio)
+                    promocion = Promocion.query.filter_by(id_servicio=detalle.id_servicio).filter(
+                        Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+                    ).first()
                     if servicio:
                         subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
                         c.drawString(60, y, f"{servicio.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                        if promocion:
+                            c.drawString(60, y-15, f"Promoción: {promocion.nombre} ({promocion.descuento}% descuento)")
+                            y -= 15
                         y -= 20
 
             c.drawString(50, y-10, "─" * 70)
@@ -408,11 +453,9 @@ def dashboard():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    # Obtener historial de compras con joinedload anidado, manejando casos donde id_usuario puede ser NULL
     ventas = Venta.query.filter((Venta.id_usuario == current_user.id_usuario) | (Venta.id_usuario == None)).options(
         joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto)
     ).all()
-    # Obtener historial de citas
     citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).all()
     return render_template('dashboard_cliente.html', ventas=ventas, citas=citas)
 
@@ -448,7 +491,6 @@ def perfil():
             db.session.rollback()
             logger.error(f"Error al actualizar perfil: {str(e)}")
             flash(f"Ocurrió un error al actualizar el perfil: {str(e)}. Por favor, intenta de nuevo.", "danger")
-    # Consultar ventas y citas correctamente
     ventas = Venta.query.filter((Venta.id_usuario == current_user.id_usuario) | (Venta.id_usuario == None)).options(
         joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto)
     ).all()
@@ -510,20 +552,16 @@ def descargar_factura(venta_id):
         # Logo circular con tamaño ajustado
         logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'casa-bella-logo.jpeg')
         if os.path.exists(logo_path):
-            # Create circular clipped image (same function as above)
             def create_circular_image(image_path, size=80):
                 img = Image.open(image_path)
                 img = img.convert("RGBA")
                 img.thumbnail((size, size), Image.Resampling.LANCZOS)
-                
                 mask = Image.new('L', (size, size), 0)
                 draw = ImageDraw.Draw(mask)
                 draw.ellipse((0, 0, size, size), fill=255)
-                
                 output = Image.new('RGBA', (size, size), (255, 255, 255, 0))
                 output.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
                 output.putalpha(mask)
-                
                 img_buffer = io.BytesIO()
                 output.save(img_buffer, format='PNG')
                 img_buffer.seek(0)
@@ -565,18 +603,31 @@ def descargar_factura(venta_id):
         y -= 25
         c.setFont("Helvetica", 9)
 
+        now = datetime.utcnow()
         for detalle in detalles_venta:
             if detalle.id_producto:
                 producto = detalle.producto
+                promocion = Promocion.query.filter_by(id_producto=detalle.id_producto).filter(
+                    Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+                ).first()
                 if producto:
                     subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
                     c.drawString(60, y, f"{producto.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                    if promocion:
+                        c.drawString(60, y-15, f"Promoción: {promocion.nombre} ({promocion.descuento}% descuento)")
+                        y -= 15
                     y -= 20
             elif detalle.id_servicio:
                 servicio = Servicio.query.get(detalle.id_servicio)
+                promocion = Promocion.query.filter_by(id_servicio=detalle.id_servicio).filter(
+                    Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+                ).first()
                 if servicio:
                     subtotal_item = Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario))
                     c.drawString(60, y, f"{servicio.nombre} x {detalle.cantidad} - ${subtotal_item.quantize(Decimal('0.01'))}")
+                    if promocion:
+                        c.drawString(60, y-15, f"Promoción: {promocion.nombre} ({promocion.descuento}% descuento)")
+                        y -= 15
                     y -= 20
 
         c.drawString(50, y-10, "─" * 70)
@@ -645,14 +696,200 @@ def borrar_cita(cita_id):
         flash(f"Ocurrió un error al borrar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
     return redirect(url_for('client.dashboard'))
 
-# Función auxiliar para generar el contenido LaTeX de la factura (mantendremos por ahora, pero no se usará)
+@bp.route('/reservar_cita', methods=['POST'])
+@login_required
+def reservar_cita():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    servicio_id = request.form.get('servicio_id')
+    fecha_hora_str = request.form.get('fecha_hora')
+    if not current_user.is_authenticated or not current_user.id_usuario:
+        flash("Error: Usuario no autenticado correctamente.", "danger")
+        return redirect(url_for('auth.login'))
+
+    try:
+        fecha_hora = datetime.strptime(fecha_hora_str, '%Y-%m-%dT%H:%M')
+        horarios = {
+            0: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+            1: {'inicio': datetime.strptime('08:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+            2: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+            3: None,
+            4: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+            5: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+            6: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('18:00', '%H:%M').time()}
+        }
+        dia_semana = fecha_hora.weekday()
+        if horarios[dia_semana] is None:
+            flash("Hora o día no disponible en el horario. El salón está cerrado este día (Jueves).", "danger")
+            return redirect(url_for('client.citas'))
+        horario_dia = horarios[dia_semana]
+        hora_solicitada = fecha_hora.time()
+        if hora_solicitada < horario_dia['inicio'] or hora_solicitada > horario_dia['fin']:
+            flash("Hora no disponible en el horario. Por favor, selecciona una hora dentro del rango permitido.", "danger")
+            return redirect(url_for('client.citas'))
+        minutos = hora_solicitada.minute
+        if minutos % 30 != 0:
+            flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos (e.g., 9:00, 9:30).", "danger")
+            return redirect(url_for('client.citas'))
+        if fecha_hora < datetime.now():
+            flash("No puedes reservar citas en el pasado.", "danger")
+            return redirect(url_for('client.citas'))
+        cita = Cita(
+            id_usuario=current_user.id_usuario,
+            id_servicio=servicio_id,
+            fecha_hora=fecha_hora,
+            estado='pendiente'
+        )
+        db.session.add(cita)
+        db.session.commit()
+        flash("Cita reservada con éxito.", "success")
+    except ValueError as e:
+        db.session.rollback()
+        logger.error(f"Error en el formato de fecha: {str(e)}")
+        flash("Error en el formato de la fecha. Usa YYYY-MM-DDTHH:MM.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al reservar cita: {str(e)}")
+        flash(f"Ocurrió un error al reservar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    return redirect(url_for('client.citas'))
+
+@bp.route('/agregar_favorito/<string:item_type>/<int:item_id>', methods=['POST'])
+@login_required
+def agregar_favorito(item_type, item_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        if item_type not in ['producto', 'servicio']:
+            raise ValueError("Tipo de item inválido.")
+        favorito = Guardado.query.filter_by(
+            id_usuario=current_user.id_usuario,
+            id_producto=item_id if item_type == 'producto' else None,
+            id_servicio=item_id if item_type == 'servicio' else None
+        ).first()
+        if item_type == 'producto':
+            item = Producto.query.get_or_404(item_id)
+            item_name = item.nombre
+        else:
+            item = Servicio.query.get_or_404(item_id)
+            item_name = item.nombre
+        if favorito:
+            db.session.delete(favorito)
+            db.session.commit()
+            flash(f"{item_name} eliminado de favoritos.", "info")
+            return jsonify({'success': True, 'added': False, 'message': f"{item_name} eliminado de favoritos."})
+        else:
+            nuevo_favorito = Guardado(
+                id_usuario=current_user.id_usuario,
+                id_producto=item_id if item_type == 'producto' else None,
+                id_servicio=item_id if item_type == 'servicio' else None
+            )
+            db.session.add(nuevo_favorito)
+            db.session.commit()
+            flash(f"{item_name} agregado a favoritos.", "success")
+            return jsonify({'success': True, 'added': True, 'message': f"{item_name} agregado a favoritos."})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al gestionar favorito: {str(e)}")
+        flash(f"Ocurrió un error: {str(e)}.", "danger")
+        return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500
+
+@bp.route('/favoritos')
+@login_required
+def favoritos():
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        favoritos = Guardado.query.options(
+            joinedload(Guardado.producto),
+            joinedload(Guardado.servicio)
+        ).filter_by(id_usuario=current_user.id_usuario).all()
+        return render_template('favoritos.html', favoritos=favoritos)
+    except Exception as e:
+        logger.error(f"Error al cargar favoritos: {str(e)}")
+        flash(f"Ocurrió un error al cargar los favoritos: {str(e)}.", "danger")
+        return redirect(url_for('client.productos'))
+
+@bp.route('/check_favorito/<string:item_type>/<int:item_id>', methods=['GET'])
+@login_required
+def check_favorito(item_type, item_id):
+    if current_user.rol != 'cliente':
+        return jsonify({'success': False, 'message': 'Acceso denegado. Solo para clientes.'}), 403
+    try:
+        if item_type not in ['producto', 'servicio']:
+            return jsonify({'success': False, 'message': 'Tipo de item inválido.'}), 400
+        favorito = Guardado.query.filter_by(
+            id_usuario=current_user.id_usuario,
+            id_producto=item_id if item_type == 'producto' else None,
+            id_servicio=item_id if item_type == 'servicio' else None
+        ).first()
+        return jsonify({'success': True, 'is_favorite': favorito is not None})
+    except Exception as e:
+        logger.error(f"Error al verificar favorito: {str(e)}")
+        return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500
+
+@bp.route('/reseñas/<string:item_type>/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def resenas(item_type, item_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    try:
+        if item_type not in ['producto', 'servicio']:
+            raise ValueError("Tipo de item inválido.")
+        if item_type == 'producto':
+            item = Producto.query.get_or_404(item_id)
+            item_name = item.nombre
+        else:
+            item = Servicio.query.get_or_404(item_id)
+            item_name = item.nombre
+        if request.method == 'POST':
+            calificacion = request.form.get('calificacion', type=int)
+            comentario = request.form.get('comentario', '').strip()
+            if not calificacion or calificacion < 1 or calificacion > 5:
+                flash("La calificación debe estar entre 1 y 5.", "danger")
+                return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
+            existing_review = Reseña.query.filter_by(
+                id_usuario=current_user.id_usuario,
+                id_producto=item_id if item_type == 'producto' else None,
+                id_servicio=item_id if item_type == 'servicio' else None
+            ).first()
+            if existing_review:
+                flash("Ya has dejado una reseña para este item.", "warning")
+                return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
+            new_review = Reseña(
+                id_usuario=current_user.id_usuario,
+                id_producto=item_id if item_type == 'producto' else None,
+                id_servicio=item_id if item_type == 'servicio' else None,
+                calificacion=calificacion,
+                comentario=comentario
+            )
+            db.session.add(new_review)
+            db.session.commit()
+            flash(f"Reseña para {item_name} enviada correctamente.", "success")
+            return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
+        reviews = Reseña.query.options(
+            joinedload(Reseña.usuario)
+        ).filter(
+            (Reseña.id_producto == item_id) if item_type == 'producto' else (Reseña.id_servicio == item_id)
+        ).all()
+        return render_template('reseñas.html', item_type=item_type, item_id=item_id, item_name=item_name, reviews=reviews)
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al gestionar reseñas: {str(e)}")
+        flash(f"Ocurrió un error: {str(e)}.", "danger")
+        return redirect(url_for('client.productos' if item_type == 'producto' else 'client.servicios'))
+
+# Función auxiliar para generar el contenido LaTeX de la factura
 def generate_factura_latex(carrito, venta):
     detalles = carrito.detalles
     total = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles if d.id_producto or d.id_servicio)
     table_rows = []
     for detalle in detalles:
         if detalle.id_producto:
-            producto = Producto.query.get(detalle.id_product)
+            producto = Producto.query.get(detalle.id_producto)
             if producto:
                 row = f"{producto.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
                 table_rows.append(row)
@@ -674,7 +911,7 @@ def generate_factura_latex(carrito, venta):
 \\fancyhf{{}}
 \\fancyhead[L]{{Factura - Casa Bella}}
 \\fancyfoot[C]{{Página \\thepage}}
-\\usepackage{{amiri}} % Fuente para soporte de caracteres no latinos
+\\usepackage{{amiri}}
 
 \\begin{{document}}
 
@@ -703,235 +940,3 @@ Producto/Servicio & Cantidad & Precio Unitario & Subtotal \\\\
 
 \\end{{document}}
 """.replace('\n', '')
-
-@bp.route('/reservar_cita', methods=['POST'])
-@login_required
-def reservar_cita():
-    if current_user.rol != 'cliente':
-        flash("Acceso denegado. Solo para clientes.", "danger")
-        return redirect(url_for('auth.login'))
-    servicio_id = request.form.get('servicio_id')
-    fecha_hora_str = request.form.get('fecha_hora')
-    if not current_user.is_authenticated or not current_user.id_usuario:
-        flash("Error: Usuario no autenticado correctamente.", "danger")
-        return redirect(url_for('auth.login'))
-
-    try:
-        # Convertir fecha_hora a objeto datetime
-        fecha_hora = datetime.strptime(fecha_hora_str, '%Y-%m-%dT%H:%M')
-
-        # Definir horarios del salón
-        horarios = {
-            0: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Lunes
-            1: {'inicio': datetime.strptime('08:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Martes
-            2: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Miércoles
-            3: None,  # Jueves (CERRADO)
-            4: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Viernes
-            5: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},  # Sábado
-            6: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('18:00', '%H:%M').time()}   # Domingo
-        }
-
-        # Obtener el día de la semana (0 = Lunes, 6 = Domingo)
-        dia_semana = fecha_hora.weekday()
-
-        # Verificar si el día está cerrado
-        if horarios[dia_semana] is None:
-            flash("Hora o día no disponible en el horario. El salón está cerrado este día (Jueves).", "danger")
-            return redirect(url_for('client.citas'))
-
-        # Obtener el horario del día
-        horario_dia = horarios[dia_semana]
-        hora_solicitada = fecha_hora.time()
-
-        # Verificar si la hora está dentro del rango permitido
-        if hora_solicitada < horario_dia['inicio'] or hora_solicitada > horario_dia['fin']:
-            flash("Hora o día no disponible en el horario. Por favor, selecciona una hora dentro del rango permitido.", "danger")
-            return redirect(url_for('client.citas'))
-
-        # Verificar incrementos de 30 minutos (opcional, ajustable)
-        minutos = hora_solicitada.minute
-        if minutos % 30 != 0:
-            flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos (e.g., 9:00, 9:30).", "danger")
-            return redirect(url_for('client.citas'))
-
-        # Verificar si la cita es en el pasado
-        if fecha_hora < datetime.now():
-            flash("No puedes reservar citas en el pasado.", "danger")
-            return redirect(url_for('client.citas'))
-
-        # Crear la cita
-        cita = Cita(
-            id_usuario=current_user.id_usuario,
-            id_servicio=servicio_id,
-            fecha_hora=fecha_hora,
-            estado='pendiente'
-        )
-        db.session.add(cita)
-        db.session.commit()
-        flash("Cita reservada con éxito.", "success")
-    except ValueError as e:
-        db.session.rollback()
-        logger.error(f"Error en el formato de fecha: {str(e)}")
-        flash("Error en el formato de la fecha. Usa YYYY-MM-DDTHH:MM.", "danger")
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error al reservar cita: {str(e)}")
-        flash(f"Ocurrió un error al reservar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
-    return redirect(url_for('client.citas'))
-
-@bp.route('/agregar_favorito/<string:item_type>/<int:item_id>', methods=['POST'])
-@login_required
-def agregar_favorito(item_type, item_id):
-    if current_user.rol != 'cliente':
-        flash("Acceso denegado. Solo para clientes.", "danger")
-        return redirect(url_for('auth.login'))
-    
-    try:
-        # Validate item_type
-        if item_type not in ['producto', 'servicio']:
-            raise ValueError("Tipo de item inválido.")
-        
-        # Check if the item is already in favorites
-        favorito = Guardado.query.filter_by(
-            id_usuario=current_user.id_usuario,
-            id_producto=item_id if item_type == 'producto' else None,
-            id_servicio=item_id if item_type == 'servicio' else None
-        ).first()
-        
-        # Get item details for flash messages
-        if item_type == 'producto':
-            item = Producto.query.get_or_404(item_id)
-            item_name = item.nombre
-        else:
-            item = Servicio.query.get_or_404(item_id)
-            item_name = item.nombre
-        
-        if favorito:
-            # If already in favorites, remove it
-            db.session.delete(favorito)
-            db.session.commit()
-            flash(f"{item_name} eliminado de favoritos.", "info")
-            return jsonify({'success': True, 'added': False, 'message': f"{item_name} eliminado de favoritos."})
-        else:
-            # Add to favorites
-            nuevo_favorito = Guardado(
-                id_usuario=current_user.id_usuario,
-                id_producto=item_id if item_type == 'producto' else None,
-                id_servicio=item_id if item_type == 'servicio' else None
-            )
-            db.session.add(nuevo_favorito)
-            db.session.commit()
-            flash(f"{item_name} agregado a favoritos.", "success")
-            return jsonify({'success': True, 'added': True, 'message': f"{item_name} agregado a favoritos."})
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error al gestionar favorito: {str(e)}")
-        flash(f"Ocurrió un error: {str(e)}.", "danger")
-        return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500
-
-@bp.route('/favoritos')
-@login_required
-def favoritos():
-    if current_user.rol != 'cliente':
-        flash("Acceso denegado. Solo para clientes.", "danger")
-        return redirect(url_for('auth.login'))
-    
-    try:
-        favoritos = Guardado.query.options(
-            joinedload(Guardado.producto),
-            joinedload(Guardado.servicio)
-        ).filter_by(id_usuario=current_user.id_usuario).all()
-        return render_template('favoritos.html', favoritos=favoritos)
-    except Exception as e:
-        logger.error(f"Error al cargar favoritos: {str(e)}")
-        flash(f"Ocurrió un error al cargar los favoritos: {str(e)}.", "danger")
-        return redirect(url_for('client.productos'))
-
-@bp.route('/check_favorito/<string:item_type>/<int:item_id>', methods=['GET'])
-@login_required
-def check_favorito(item_type, item_id):
-    if current_user.rol != 'cliente':
-        return jsonify({'success': False, 'message': 'Acceso denegado. Solo para clientes.'}), 403
-    
-    try:
-        if item_type not in ['producto', 'servicio']:
-            return jsonify({'success': False, 'message': 'Tipo de item inválido.'}), 400
-        
-        favorito = Guardado.query.filter_by(
-            id_usuario=current_user.id_usuario,
-            id_producto=item_id if item_type == 'producto' else None,
-            id_servicio=item_id if item_type == 'servicio' else None
-        ).first()
-        return jsonify({'success': True, 'is_favorite': favorito is not None})
-    except Exception as e:
-        logger.error(f"Error al verificar favorito: {str(e)}")
-        return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500
-    
-
-@bp.route('/reseñas/<string:item_type>/<int:item_id>', methods=['GET', 'POST'])
-@login_required
-def resenas(item_type, item_id):
-    if current_user.rol != 'cliente':
-        flash("Acceso denegado. Solo para clientes.", "danger")
-        return redirect(url_for('auth.login'))
-    
-    try:
-        # Validate item_type
-        if item_type not in ['producto', 'servicio']:
-            raise ValueError("Tipo de item inválido.")
-        
-        # Get item details
-        if item_type == 'producto':
-            item = Producto.query.get_or_404(item_id)
-            item_name = item.nombre
-        else:
-            item = Servicio.query.get_or_404(item_id)
-            item_name = item.nombre
-        
-        if request.method == 'POST':
-            calificacion = request.form.get('calificacion', type=int)
-            comentario = request.form.get('comentario', '').strip()
-            
-            # Validate input
-            if not calificacion or calificacion < 1 or calificacion > 5:
-                flash("La calificación debe estar entre 1 y 5.", "danger")
-                return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
-            
-            # Check if user already reviewed this item
-            existing_review = Reseña.query.filter_by(
-                id_usuario=current_user.id_usuario,
-                id_producto=item_id if item_type == 'producto' else None,
-                id_servicio=item_id if item_type == 'servicio' else None
-            ).first()
-            
-            if existing_review:
-                flash("Ya has dejado una reseña para este item.", "warning")
-                return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
-            
-            # Create new review
-            new_review = Reseña(
-                id_usuario=current_user.id_usuario,
-                id_producto=item_id if item_type == 'producto' else None,
-                id_servicio=item_id if item_type == 'servicio' else None,
-                calificacion=calificacion,
-                comentario=comentario
-            )
-            db.session.add(new_review)
-            db.session.commit()
-            flash(f"Reseña para {item_name} enviada correctamente.", "success")
-            return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
-        
-        # GET request: Load reviews
-        reviews = Reseña.query.options(
-            joinedload(Reseña.usuario)
-        ).filter(
-            (Reseña.id_producto == item_id) if item_type == 'producto' else (Reseña.id_servicio == item_id)
-        ).all()
-        
-        return render_template('reseñas.html', item_type=item_type, item_id=item_id, item_name=item_name, reviews=reviews)
-    
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error al gestionar reseñas: {str(e)}")
-        flash(f"Ocurrió un error: {str(e)}.", "danger")
-        return redirect(url_for('client.productos' if item_type == 'producto' else 'client.servicios'))

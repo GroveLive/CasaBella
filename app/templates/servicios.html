@@ -9,12 +9,23 @@
         .favorite-btn.active {
             color: #ff4d4d;
         }
+        .promotion-badge {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+        }
     </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
         <h1 class="mb-4">Nuestros Servicios</h1>
         <p class="lead mb-4">Explora los servicios premium que ofrecemos en Casa Bella.</p>
+        <div class="mb-4">
+            <a href="{{ url_for('client.servicios') }}" class="btn btn-outline-primary {{ '' if not filter_promotions else 'btn-outline-secondary' }}">Todos los Servicios</a>
+            <a href="{{ url_for('client.servicios', filter='promotions') }}" class="btn btn-primary {{ 'btn-outline-secondary' if not filter_promotions else '' }}">Solo en Promoción</a>
+        </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -33,7 +44,16 @@
                         <h5 class="card-title text-custom-accent fw-bold">{{ servicio.nombre }}</h5>
                         <p class="card-text flex-grow-1">{{ servicio.descripcion or 'Sin descripción' }}</p>
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(servicio.precio) }}</span>
+                            {% set promocion = promociones | selectattr('id_servicio', 'equalto', servicio.id_servicio) | first %}
+                            {% if promocion %}
+                                <div>
+                                    <span class="h4 fw-bold mb-0 text-decoration-line-through">${{ '%0.2f'|format(servicio.precio) }}</span>
+                                    <span class="h4 fw-bold mb-0 text-danger">${{ '%0.2f'|format((servicio.precio * (1 - (promocion.descuento / 100)))|round(2)) }}</span>
+                                    <span class="promotion-badge ms-2">{{ promocion.descuento }}% OFF</span>
+                                </div>
+                            {% else %}
+                                <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(servicio.precio) }}</span>
+                            {% endif %}
                             <span class="badge bg-custom-accent">
                                 <i class="bi bi-clock me-1"></i>{{ servicio.duracion }} min
                             </span>

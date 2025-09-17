@@ -22,7 +22,7 @@
                 <table class="table cart-table">
                     <thead>
                         <tr>
-                            <th class="text-center">Producto</th>
+                            <th class="text-center">Producto/Servicio</th>
                             <th class="text-center">Cantidad</th>
                             <th class="text-center">Precio Unitario</th>
                             <th class="text-center">Subtotal</th>
@@ -37,8 +37,14 @@
                             {% set cantidad = detalle.cantidad if detalle.cantidad is not none else 0 %}
                             {% set subtotal = cantidad * precio_unitario %}
                             {% set total = total + subtotal %}
+                            {% set promocion = promociones | selectattr("id_producto", "equalto", detalle.id_producto) | first if detalle.id_producto else (promociones | selectattr("id_servicio", "equalto", detalle.id_servicio) | first if detalle.id_servicio else none) %}
                             <tr data-detalle-id="{{ detalle.id_detalle_carrito }}" class="cart-item">
-                                <td class="text-start">{{ producto.nombre if producto else (servicio.nombre if servicio else 'Item no identificado') }}</td>
+                                <td class="text-start">
+                                    {{ producto.nombre if producto else (servicio.nombre if servicio else 'Item no identificado') }}
+                                    {% if promocion %}
+                                        <br><small class="text-success">Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</small>
+                                    {% endif %}
+                                </td>
                                 <td class="text-center">
                                     <div class="quantity-control">
                                         <button class="btn btn-sm btn-secondary decrement" data-id="{{ detalle.id_detalle_carrito }}">-</button>
@@ -46,7 +52,7 @@
                                         <button class="btn btn-sm btn-secondary increment" data-id="{{ detalle.id_detalle_carrito }}">+</button>
                                     </div>
                                 </td>
-                                <td class="text-center precio-unitario">${{ '%.2f'|format(precio_unitario) }}</td>
+                                <td class="text-center precio-unitario" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(precio_unitario) }}</td>
                                 <td class="text-center subtotal" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(subtotal) }}</td>
                                 <td class="text-center">
                                     <button class="btn btn-danger btn-sm" onclick="eliminarItem({{ detalle.id_detalle_carrito }})">Eliminar</button>
