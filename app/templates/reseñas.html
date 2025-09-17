@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Reseñas de {{ item_name }} - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/productos.css') }}">
+    <style>
+        .star-rating .bi-star-fill {
+            color: #f1c40f;
+        }
+        .star-rating .bi-star {
+            color: #ccc;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Reseñas de {{ item_name }}</h1>
+        <p class="lead mb-4">Lee lo que otros clientes han dicho y comparte tu opinión.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Review Form -->
+        {% if current_user.is_authenticated and current_user.rol == 'cliente' %}
+            {% if not reviews | selectattr('id_usuario', 'equalto', current_user.id_usuario) | list %}
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Deja tu reseña</h5>
+                        <form method="POST" action="{{ url_for('client.resenas', item_type=item_type, item_id=item_id) }}">
+                            <div class="mb-3">
+                                <label for="calificacion" class="form-label">Calificación</label>
+                                <select class="form-select" id="calificacion" name="calificacion" required>
+                                    <option value="" disabled selected>Selecciona una calificación</option>
+                                    <option value="1">1 estrella</option>
+                                    <option value="2">2 estrellas</option>
+                                    <option value="3">3 estrellas</option>
+                                    <option value="4">4 estrellas</option>
+                                    <option value="5">5 estrellas</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="comentario" class="form-label">Comentario (opcional)</label>
+                                <textarea class="form-control" id="comentario" name="comentario" rows="4"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enviar Reseña</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">Ya has dejado una reseña para este {{ 'producto' if item_type == 'producto' else 'servicio' }}.</div>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">Inicia sesión como cliente para dejar una reseña.</div>
+        {% endif %}
+        
+        <!-- Reviews List -->
+        <h3 class="mb-3">Reseñas de otros clientes</h3>
+        {% if reviews %}
+            <div class="row g-4">
+                {% for review in reviews %}
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="card-title mb-0">{{ review.usuario.nombre or 'Usuario Anónimo' }}</h5>
+                                    <div class="star-rating">
+                                        {% for i in range(5) %}
+                                            <i class="bi {{ 'bi-star-fill' if i < review.calificacion else 'bi-star' }}"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <p class="card-text">{{ review.comentario or 'Sin comentario' }}</p>
+                                <small class="text-muted">Publicado el {{ review.fecha_resena.strftime('%d/%m/%Y %H:%M') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center">No hay reseñas para este {{ 'producto' if item_type == 'producto' else 'servicio' }} aún.</p>
+        {% endif %}
+        
+        <a href="{{ url_for('client.productos' if item_type == 'producto' else 'client.servicios') }}" class="btn btn-outline-secondary mt-4">Volver</a>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        });
+    </script>
+{% endblock %}

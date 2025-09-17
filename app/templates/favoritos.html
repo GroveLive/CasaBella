@@ -2,11 +2,19 @@
 {% block title %}Favoritos - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/productos.css') }}">
+    <style>
+        .favorite-btn {
+            transition: color 0.3s;
+        }
+        .favorite-btn.active {
+            color: #ff4d4d;
+        }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
         <h1 class="mb-4">Tus Favoritos</h1>
-        <p class="lead mb-4">Aquí están los productos que has guardado como favoritos.</p>
+        <p class="lead mb-4">Aquí están los productos y servicios que has guardado como favoritos.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -35,7 +43,33 @@
                                 <a href="{{ url_for('client.agregar_carrito', item_id=favorito.producto.id_producto) }}" class="btn btn-primary">
                                     <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
                                 </a>
-                                <button class="btn btn-outline-secondary favorite-btn active" data-product-id="{{ favorito.producto.id_producto }}" data-toggle-url="{{ url_for('client.agregar_favorito', producto_id=favorito.producto.id_producto) }}" title="Eliminar de favoritos">
+                                <button class="btn btn-outline-secondary favorite-btn active" id="favorite-btn-{{ favorito.producto.id_producto }}" data-item-type="producto" data-item-id="{{ favorito.producto.id_producto }}" title="Eliminar de favoritos">
+                                    <i class="bi bi-heart-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif favorito.servicio %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card service-card h-100 border-0 shadow-sm">
+                        <div class="card-img-container">
+                            <img src="{{ url_for('static', filename='images/servicio_' ~ favorito.servicio.id_servicio ~ '.jpg') if not favorito.servicio.imagen_url else favorito.servicio.imagen_url }}" class="card-img-top service-image" alt="{{ favorito.servicio.nombre }}" onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}';">
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-custom-accent fw-bold">{{ favorito.servicio.nombre }}</h5>
+                            <p class="card-text flex-grow-1">{{ favorito.servicio.descripcion or 'Sin descripción' }}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(favorito.servicio.precio) }}</span>
+                                <span class="badge bg-custom-accent">
+                                    <i class="bi bi-clock me-1"></i>{{ favorito.servicio.duracion }} min
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mt-auto">
+                                <a href="{{ url_for('client.citas') }}?servicio_id={{ favorito.servicio.id_servicio }}" class="btn btn-primary" data-bs-toggle="tooltip" title="Reservar este servicio">
+                                    <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
+                                </a>
+                                <button class="btn btn-outline-secondary favorite-btn active" id="favorite-btn-{{ favorito.servicio.id_servicio }}" data-item-type="servicio" data-item-id="{{ favorito.servicio.id_servicio }}" title="Eliminar de favoritos">
                                     <i class="bi bi-heart-fill"></i>
                                 </button>
                             </div>
@@ -46,20 +80,23 @@
             {% endfor %}
         </div>
         {% if not favoritos %}
-            <p class="text-center">No tienes productos en favoritos.</p>
+            <p class="text-center">No tienes productos ni servicios en favoritos.</p>
         {% endif %}
     </div>
 {% endblock %}
 {% block scripts %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', () => {
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
             $('.favorite-btn').click(function() {
                 var button = $(this);
-                var productId = button.data('product-id');
-                var toggleUrl = button.data('toggle-url');
+                var itemType = button.data('item-type');
+                var itemId = button.data('item-id');
                 $.ajax({
-                    url: toggleUrl,
+                    url: '/client/agregar_favorito/' + itemType + '/' + itemId,
                     type: 'POST',
                     dataType: 'json',
                     success: function(response) {
@@ -68,25 +105,17 @@
                                 button.addClass('active');
                                 button.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
                             } else {
-                                // Remove the product card from the DOM
+                                // Remove the card from the DOM
                                 button.closest('.col-md-6').remove();
                                 if ($('.col-md-6').length === 0) {
-                                    $('.row.g-4').after('<p class="text-center">No tienes productos en favoritos.</p>');
-                                }
-                                // Update favoritos_count in the navbar
-                                var favoritosCount = parseInt($('.navbar .badge').text() || 0) - 1;
-                                if (favoritosCount <= 0) {
-                                    $('.navbar .badge').remove();
-                                } else {
-                                    $('.navbar .badge').text(favoritosCount);
+                                    $('.row.g-4').after('<p class="text-center">No tienes productos ni servicios en favoritos.</p>');
                                 }
                             }
                         } else {
                             alert('Error: ' + response.message);
                         }
                     },
-                    error: function(xhr, status, error) {
-                        console.log('Error AJAX: ' + error);
+                    error: function() {
                         alert('Error al procesar la solicitud. Por favor, intenta de nuevo.');
                     }
                 });

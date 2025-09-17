@@ -42,9 +42,12 @@
                             <a href="{{ url_for('client.agregar_carrito', item_id=producto.id_producto) }}" class="btn btn-primary">
                                 <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
                             </a>
-                            <button class="btn btn-outline-secondary favorite-btn" data-product-id="{{ producto.id_producto }}" data-toggle-url="{{ url_for('client.agregar_favorito', producto_id=producto.id_producto) }}" title="Agregar a favoritos">
+                            <button class="btn btn-outline-secondary favorite-btn" id="favorite-btn-{{ producto.id_producto }}" data-item-type="producto" data-item-id="{{ producto.id_producto }}" title="Agregar a favoritos">
                                 <i class="bi bi-heart"></i>
                             </button>
+                            <a href="{{ url_for('client.resenas', item_type='producto', item_id=producto.id_producto) }}" class="btn btn-outline-secondary" title="Ver reseñas">
+                                <i class="bi bi-star"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -60,32 +63,25 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Función para verificar si un producto está en favoritos
-            function checkFavoriteStatus(productId, button) {
-                $.get('/client/check_favorito/' + productId, function(data) {
-                    if (data.success && data.is_favorite) {
-                        button.addClass('active');
-                        button.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
-                    }
-                }).fail(function() {
-                    console.log('Error al verificar estado de favorito');
-                });
-            }
-
-            // Verificar estado inicial para cada botón
+            // Check favorite status on page load
             $('.favorite-btn').each(function() {
-                var productId = $(this).data('product-id');
-                checkFavoriteStatus(productId, $(this));
+                var itemType = $(this).data('item-type');
+                var itemId = $(this).data('item-id');
+                $.get('{{ url_for("client.check_favorito", item_type="producto", item_id=0) }}'.replace('0', itemId), function(data) {
+                    if (data.success && data.is_favorite) {
+                        $('#favorite-btn-' + itemId).addClass('active');
+                        $('#favorite-btn-' + itemId).find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                    }
+                });
             });
 
-            // Manejar clic en botón de favoritos
+            // Handle favorite button click
             $('.favorite-btn').click(function() {
                 var button = $(this);
-                var productId = button.data('product-id');
-                var toggleUrl = button.data('toggle-url');  // URL pre-generada con el ID
-
+                var itemType = button.data('item-type');
+                var itemId = button.data('item-id');
                 $.ajax({
-                    url: toggleUrl,
+                    url: '{{ url_for("client.agregar_favorito", item_type="producto", item_id=0) }}'.replace('0', itemId),
                     type: 'POST',
                     dataType: 'json',
                     success: function(response) {
@@ -101,8 +97,7 @@
                             alert('Error: ' + response.message);
                         }
                     },
-                    error: function(xhr, status, error) {
-                        console.log('Error AJAX: ' + error);
+                    error: function() {
                         alert('Error al procesar la solicitud. Por favor, intenta de nuevo.');
                     }
                 });

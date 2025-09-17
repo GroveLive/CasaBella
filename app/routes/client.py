@@ -779,38 +779,56 @@ def reservar_cita():
         flash(f"Ocurrió un error al reservar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
     return redirect(url_for('client.citas'))
 
-@bp.route('/agregar_favorito/<int:producto_id>', methods=['POST'])
+@bp.route('/agregar_favorito/<string:item_type>/<int:item_id>', methods=['POST'])
 @login_required
-def agregar_favorito(producto_id):
+def agregar_favorito(item_type, item_id):
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
     
     try:
-        # Check if the product is already in favorites
-        favorito = Guardado.query.filter_by(id_usuario=current_user.id_usuario, id_producto=producto_id).first()
-        producto = Producto.query.get_or_404(producto_id)
+        # Validate item_type
+        if item_type not in ['producto', 'servicio']:
+            raise ValueError("Tipo de item inválido.")
+        
+        # Check if the item is already in favorites
+        favorito = Guardado.query.filter_by(
+            id_usuario=current_user.id_usuario,
+            id_producto=item_id if item_type == 'producto' else None,
+            id_servicio=item_id if item_type == 'servicio' else None
+        ).first()
+        
+        # Get item details for flash messages
+        if item_type == 'producto':
+            item = Producto.query.get_or_404(item_id)
+            item_name = item.nombre
+        else:
+            item = Servicio.query.get_or_404(item_id)
+            item_name = item.nombre
         
         if favorito:
             # If already in favorites, remove it
             db.session.delete(favorito)
             db.session.commit()
-            flash(f"{producto.nombre} eliminado de favoritos.", "info")
-            return jsonify({'success': True, 'added': False, 'message': f"{producto.nombre} eliminado de favoritos."})
+            flash(f"{item_name} eliminado de favoritos.", "info")
+            return jsonify({'success': True, 'added': False, 'message': f"{item_name} eliminado de favoritos."})
         else:
             # Add to favorites
-            nuevo_favorito = Guardado(id_usuario=current_user.id_usuario, id_producto=producto_id)
+            nuevo_favorito = Guardado(
+                id_usuario=current_user.id_usuario,
+                id_producto=item_id if item_type == 'producto' else None,
+                id_servicio=item_id if item_type == 'servicio' else None
+            )
             db.session.add(nuevo_favorito)
             db.session.commit()
-            flash(f"{producto.nombre} agregado a favoritos.", "success")
-            return jsonify({'success': True, 'added': True, 'message': f"{producto.nombre} agregado a favoritos."})
+            flash(f"{item_name} agregado a favoritos.", "success")
+            return jsonify({'success': True, 'added': True, 'message': f"{item_name} agregado a favoritos."})
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error al gestionar favorito: {str(e)}")
         flash(f"Ocurrió un error: {str(e)}.", "danger")
         return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500
 
-# Route to display the favorites list
 @bp.route('/favoritos')
 @login_required
 def favoritos():
@@ -820,23 +838,100 @@ def favoritos():
     
     try:
         favoritos = Guardado.query.options(
-            joinedload(Guardado.producto)
+            joinedload(Guardado.producto),
+            joinedload(Guardado.servicio)
         ).filter_by(id_usuario=current_user.id_usuario).all()
         return render_template('favoritos.html', favoritos=favoritos)
     except Exception as e:
         logger.error(f"Error al cargar favoritos: {str(e)}")
         flash(f"Ocurrió un error al cargar los favoritos: {str(e)}.", "danger")
         return redirect(url_for('client.productos'))
-    
-@bp.route('/check_favorito/<int:producto_id>', methods=['GET'])
+
+@bp.route('/check_favorito/<string:item_type>/<int:item_id>', methods=['GET'])
 @login_required
-def check_favorito(producto_id):
+def check_favorito(item_type, item_id):
     if current_user.rol != 'cliente':
         return jsonify({'success': False, 'message': 'Acceso denegado. Solo para clientes.'}), 403
+    
     try:
-        favorito = Guardado.query.filter_by(id_usuario=current_user.id_usuario, id_producto=producto_id).first()
+        if item_type not in ['producto', 'servicio']:
+            return jsonify({'success': False, 'message': 'Tipo de item inválido.'}), 400
+        
+        favorito = Guardado.query.filter_by(
+            id_usuario=current_user.id_usuario,
+            id_producto=item_id if item_type == 'producto' else None,
+            id_servicio=item_id if item_type == 'servicio' else None
+        ).first()
         return jsonify({'success': True, 'is_favorite': favorito is not None})
     except Exception as e:
         logger.error(f"Error al verificar favorito: {str(e)}")
-        return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500   
+        return jsonify({'success': False, 'message': f"Ocurrió un error: {str(e)}"}), 500
     
+
+@bp.route('/reseñas/<string:item_type>/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def resenas(item_type, item_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    
+    try:
+        # Validate item_type
+        if item_type not in ['producto', 'servicio']:
+            raise ValueError("Tipo de item inválido.")
+        
+        # Get item details
+        if item_type == 'producto':
+            item = Producto.query.get_or_404(item_id)
+            item_name = item.nombre
+        else:
+            item = Servicio.query.get_or_404(item_id)
+            item_name = item.nombre
+        
+        if request.method == 'POST':
+            calificacion = request.form.get('calificacion', type=int)
+            comentario = request.form.get('comentario', '').strip()
+            
+            # Validate input
+            if not calificacion or calificacion < 1 or calificacion > 5:
+                flash("La calificación debe estar entre 1 y 5.", "danger")
+                return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
+            
+            # Check if user already reviewed this item
+            existing_review = Reseña.query.filter_by(
+                id_usuario=current_user.id_usuario,
+                id_producto=item_id if item_type == 'producto' else None,
+                id_servicio=item_id if item_type == 'servicio' else None
+            ).first()
+            
+            if existing_review:
+                flash("Ya has dejado una reseña para este item.", "warning")
+                return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
+            
+            # Create new review
+            new_review = Reseña(
+                id_usuario=current_user.id_usuario,
+                id_producto=item_id if item_type == 'producto' else None,
+                id_servicio=item_id if item_type == 'servicio' else None,
+                calificacion=calificacion,
+                comentario=comentario
+            )
+            db.session.add(new_review)
+            db.session.commit()
+            flash(f"Reseña para {item_name} enviada correctamente.", "success")
+            return redirect(url_for('client.resenas', item_type=item_type, item_id=item_id))
+        
+        # GET request: Load reviews
+        reviews = Reseña.query.options(
+            joinedload(Reseña.usuario)
+        ).filter(
+            (Reseña.id_producto == item_id) if item_type == 'producto' else (Reseña.id_servicio == item_id)
+        ).all()
+        
+        return render_template('reseñas.html', item_type=item_type, item_id=item_id, item_name=item_name, reviews=reviews)
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al gestionar reseñas: {str(e)}")
+        flash(f"Ocurrió un error: {str(e)}.", "danger")
+        return redirect(url_for('client.productos' if item_type == 'producto' else 'client.servicios'))

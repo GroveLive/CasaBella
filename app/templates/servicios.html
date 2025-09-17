@@ -2,6 +2,14 @@
 {% block title %}Servicios - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/servicios.css') }}">
+    <style>
+        .favorite-btn {
+            transition: color 0.3s;
+        }
+        .favorite-btn.active {
+            color: #ff4d4d;
+        }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
@@ -30,9 +38,17 @@
                                 <i class="bi bi-clock me-1"></i>{{ servicio.duracion }} min
                             </span>
                         </div>
-                        <a href="{{ url_for('client.citas') }}?servicio_id={{ servicio.id_servicio }}" class="btn btn-primary mt-auto" data-bs-toggle="tooltip" title="Reservar este servicio">
-                            <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
-                        </a>
+                        <div class="d-flex justify-content-between mt-auto">
+                            <a href="{{ url_for('client.citas') }}?servicio_id={{ servicio.id_servicio }}" class="btn btn-primary" data-bs-toggle="tooltip" title="Reservar este servicio">
+                                <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
+                            </a>
+                            <button class="btn btn-outline-secondary favorite-btn" id="favorite-btn-{{ servicio.id_servicio }}" data-item-type="servicio" data-item-id="{{ servicio.id_servicio }}" title="Agregar a favoritos">
+                                <i class="bi bi-heart"></i>
+                            </button>
+                            <a href="{{ url_for('client.resenas', item_type='servicio', item_id=servicio.id_servicio) }}" class="btn btn-outline-secondary" title="Ver reseñas">
+                                <i class="bi bi-star"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -44,10 +60,51 @@
     </div>
 {% endblock %}
 {% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
             [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+            // Check favorite status on page load
+            $('.favorite-btn').each(function() {
+                var itemType = $(this).data('item-type');
+                var itemId = $(this).data('item-id');
+                $.get('{{ url_for("client.check_favorito", item_type="servicio", item_id=0) }}'.replace('0', itemId), function(data) {
+                    if (data.success && data.is_favorite) {
+                        $('#favorite-btn-' + itemId).addClass('active');
+                        $('#favorite-btn-' + itemId).find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                    }
+                });
+            });
+
+            // Handle favorite button click
+            $('.favorite-btn').click(function() {
+                var button = $(this);
+                var itemType = button.data('item-type');
+                var itemId = button.data('item-id');
+                $.ajax({
+                    url: '{{ url_for("client.agregar_favorito", item_type="servicio", item_id=0) }}'.replace('0', itemId),
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            if (response.added) {
+                                button.addClass('active');
+                                button.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                            } else {
+                                button.removeClass('active');
+                                button.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
+                            }
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Error al procesar la solicitud. Por favor, intenta de nuevo.');
+                    }
+                });
+            });
         });
     </script>
 {% endblock %}
