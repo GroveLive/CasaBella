@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-5 text-center text-secondary">Mi Perfil</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('client.perfil') }}">
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ usuario.email or '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="telefono" class="form-label">Teléfono</label>
+                <input type="text" class="form-control" id="telefono" name="telefono" value="{{ usuario.telefono or '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="contraseña" class="form-label">Nueva Contraseña (dejar en blanco para no cambiar)</label>
+                <input type="password" class="form-control" id="contraseña" name="contraseña">
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
+                <a href="{{ url_for('client.dashboard') }}" class="btn btn-secondary">Volver al Dashboard</a>
+            </div>
+        </form>
+        <div class="text-center mt-4">
+            <form action="{{ url_for('client.borrar_perfil') }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de eliminar tu perfil? Esta acción no se puede deshacer.')">Eliminar Perfil</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

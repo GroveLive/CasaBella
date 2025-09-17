@@ -5,44 +5,22 @@
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <h1 class="mb-4">Dashboard de {{ current_user.nombre }}</h1>
+        <h1 class="mb-4 text-center text-secondary">Dashboard de {{ current_user.nombre }}</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <!-- Sección de Perfil -->
-        <h2 class="mt-4">Mi Perfil</h2>
-        <form method="POST" action="{{ url_for('client.perfil') }}" class="mb-4">
-            <div class="form-group">
-                <label for="nombre">Nombre</label>
-                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ current_user.nombre }}" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
-            </div>
-            <div class="form-group">
-                <label for="telefono">Teléfono</label>
-                <input type="text" class="form-control" id="telefono" name="telefono" value="{{ current_user.telefono or '' }}">
-            </div>
-            <div class="form-group">
-                <label for="contraseña">Nueva Contraseña (dejar en blanco para no cambiar)</label>
-                <input type="password" class="form-control" id="contraseña" name="contraseña">
-            </div>
-            <p><strong>Rol:</strong> {{ current_user.rol }} (No editable)</p>
-            <p><strong>Especialidad:</strong> {{ current_user.especialidad or 'N/A' }} (No editable)</p>
-            <p><strong>Fecha de Registro:</strong> {{ current_user.fecha_registro.strftime('%Y-%m-%d %H:%M') }} (No editable)</p>
-            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-        </form>
-
-        <!-- Formulario separado para borrar perfil -->
-        <form method="POST" action="{{ url_for('client.borrar_perfil') }}" class="mt-2" style="display:inline;">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de borrar tu perfil? Esto te desconectará.');">Borrar Perfil</button>
-        </form>
+        <!-- Botón para ir al perfil -->
+        <div class="text-center mb-4">
+            <a href="{{ url_for('client.perfil') }}" class="btn btn-primary">Editar Perfil</a>
+        </div>
 
         <!-- Historial de Compras -->
         <h2 class="mt-4">Historial de Compras</h2>
@@ -52,6 +30,7 @@
                     <tr>
                         <th>ID Venta</th>
                         <th>Fecha</th>
+                        <th>Detalles</th>
                         <th>Total</th>
                         <th>Acciones</th>
                     </tr>
@@ -60,7 +39,25 @@
                     {% for venta in ventas %}
                         <tr>
                             <td>{{ venta.id_venta }}</td>
-                            <td>{{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha' }}</td>
+                            <td>
+                                {% for detalle in venta.detalle_ventas %}
+                                    {% if detalle.producto %}
+                                        {{ detalle.producto.nombre }} x {{ detalle.cantidad }} (${{ '%.2f'|format(detalle.precio_unitario) }})
+                                        {% set promocion = promociones|selectattr('id_producto', 'equalto', detalle.id_producto)|first %}
+                                        {% if promocion %}
+                                            <br><small>Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</small>
+                                        {% endif %}
+                                    {% elif detalle.servicio %}
+                                        {{ detalle.servicio.nombre }} x {{ detalle.cantidad }} (${{ '%.2f'|format(detalle.precio_unitario) }})
+                                        {% set promocion = promociones|selectattr('id_servicio', 'equalto', detalle.id_servicio)|first %}
+                                        {% if promocion %}
+                                            <br><small>Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</small>
+                                        {% endif %}
+                                    {% endif %}
+                                    <br>
+                                {% endfor %}
+                            </td>
                             <td>${{ '%.2f'|format(venta.total) }}</td>
                             <td>
                                 <a href="{{ url_for('client.descargar_factura', venta_id=venta.id_venta) }}" class="btn btn-primary btn-sm">Descargar Factura</a>
@@ -83,6 +80,7 @@
                 <thead>
                     <tr>
                         <th>ID Cita</th>
+                        <th>Servicio</th>
                         <th>Fecha y Hora</th>
                         <th>Estado</th>
                         <th>Acciones</th>
@@ -92,11 +90,12 @@
                     {% for cita in citas %}
                         <tr>
                             <td>{{ cita.id_cita }}</td>
+                            <td>{{ cita.servicio.nombre if cita.servicio else 'Servicio no encontrado' }}</td>
                             <td>{{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>{{ cita.estado }}</td>
                             <td>
                                 <form method="POST" action="{{ url_for('client.borrar_cita', cita_id=cita.id_cita) }}" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de borrar esta cita?');">Borrar</button>
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de cancelar esta cita?');">Cancelar</button>
                                 </form>
                             </td>
                         </tr>

@@ -183,21 +183,28 @@ def carrito():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    logger.debug(f"Cargando carrito para usuario: {current_user.id_usuario}")
-    carrito = Carrito.query.options(
-        joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto),
-        joinedload(Carrito.detalles).joinedload(DetalleCarrito.servicio)
-    ).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
-    logger.debug(f"Carrito cargado: {carrito}")
-    if carrito:
-        logger.debug(f"Detalles cargados: {[d.id_detalle_carrito for d in carrito.detalles]}")
-        for detalle in carrito.detalles:
-            logger.debug(f"Detalle {detalle.id_detalle_carrito}: producto = {detalle.producto}, servicio = {detalle.servicio}")
-    else:
-        logger.debug("No se encontró carrito activo")
-    if not carrito:
-        flash("No tienes un carrito activo.", "info")
-    return render_template('carrito.html', carrito=carrito)
+    try:
+        logger.debug(f"Cargando carrito para usuario: {current_user.id_usuario}")
+        now = datetime.utcnow()
+        carrito = Carrito.query.options(
+            joinedload(Carrito.detalles).joinedload(DetalleCarrito.producto),
+            joinedload(Carrito.detalles).joinedload(DetalleCarrito.servicio)
+        ).filter_by(id_usuario=current_user.id_usuario, estado='activo').first()
+        promociones = Promocion.query.filter(Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now).all()
+        logger.debug(f"Carrito cargado: {carrito}")
+        if carrito:
+            logger.debug(f"Detalles cargados: {[d.id_detalle_carrito for d in carrito.detalles]}")
+            for detalle in carrito.detalles:
+                logger.debug(f"Detalle {detalle.id_detalle_carrito}: producto = {detalle.producto}, servicio = {detalle.servicio}")
+        else:
+            logger.debug("No se encontró carrito activo")
+        if not carrito:
+            flash("No tienes un carrito activo.", "info")
+        return render_template('carrito.html', carrito=carrito, promociones=promociones)
+    except Exception as e:
+        logger.error(f"Error al cargar carrito: {str(e)}")
+        flash(f"Ocurrió un error al cargar el carrito: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('auth.login'))
 
 @bp.route('/eliminar_del_carrito/<int:detalle_id>', methods=['POST'])
 @login_required
@@ -254,7 +261,7 @@ def actualizar_cantidad(detalle_id):
         return jsonify({
             'success': True,
             'cantidad': nueva_cantidad,
-            'precio_unitario': detalle.precio_unitario
+            'precio_unitario': float(detalle.precio_unitario)  # Convertir Decimal a float para JSON
         })
     except Exception as e:
         db.session.rollback()
@@ -375,7 +382,7 @@ def procesar_compra():
             c.setFont("Helvetica-Bold", 12)
             c.drawString(50, 680, "FACTURA")
             c.setFont("Helvetica", 10)
-            c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M')}")
+            c.drawString(400, 680, f"Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha'}")
             
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, 660, "DATOS DEL CLIENTE:")
@@ -453,11 +460,22 @@ def dashboard():
     if current_user.rol != 'cliente':
         flash("Acceso denegado. Solo para clientes.", "danger")
         return redirect(url_for('auth.login'))
-    ventas = Venta.query.filter((Venta.id_usuario == current_user.id_usuario) | (Venta.id_usuario == None)).options(
-        joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto)
-    ).all()
-    citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).all()
-    return render_template('dashboard_cliente.html', ventas=ventas, citas=citas)
+    try:
+        logger.debug(f"Cargando dashboard para usuario: {current_user.id_usuario}")
+        now = datetime.utcnow()
+        ventas = Venta.query.filter_by(id_usuario=current_user.id_usuario).options(
+            joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto),
+            joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.servicio)
+        ).all()
+        citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).options(
+            joinedload(Cita.servicio)
+        ).all()
+        promociones = Promocion.query.filter(Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now).all()
+        return render_template('dashboard_cliente.html', ventas=ventas, citas=citas, promociones=promociones)
+    except Exception as e:
+        logger.error(f"Error al cargar dashboard: {str(e)}")
+        flash(f"Ocurrió un error al cargar el dashboard: {str(e)}. Por favor, intenta de nuevo.", "danger")
+        return redirect(url_for('auth.login'))
 
 @bp.route('/perfil', methods=['GET', 'POST'])
 @login_required
@@ -481,21 +499,13 @@ def perfil():
             if nueva_contraseña:
                 current_user.contraseña = generate_password_hash(nueva_contraseña)
 
-            current_user.rol = current_user.rol
-            current_user.especialidad = current_user.especialidad
-            current_user.fecha_registro = current_user.fecha_registro
-
             db.session.commit()
             flash("Perfil actualizado con éxito.", "success")
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error al actualizar perfil: {str(e)}")
             flash(f"Ocurrió un error al actualizar el perfil: {str(e)}. Por favor, intenta de nuevo.", "danger")
-    ventas = Venta.query.filter((Venta.id_usuario == current_user.id_usuario) | (Venta.id_usuario == None)).options(
-        joinedload(Venta.detalle_ventas).joinedload(DetalleVenta.producto)
-    ).all()
-    citas = Cita.query.filter_by(id_usuario=current_user.id_usuario).all()
-    return render_template('dashboard_cliente.html', ventas=ventas, citas=citas)
+    return render_template('perfil.html', usuario=current_user)
 
 @bp.route('/borrar_perfil', methods=['POST'])
 @login_required
@@ -540,7 +550,10 @@ def descargar_factura(venta_id):
         return redirect(url_for('client.dashboard'))
     try:
         total = venta.total if venta.total else Decimal('0.00')
-        detalles_venta = DetalleVenta.query.filter_by(id_venta=venta_id).options(joinedload(DetalleVenta.producto)).all()
+        detalles_venta = DetalleVenta.query.filter_by(id_venta=venta_id).options(
+            joinedload(DetalleVenta.producto),
+            joinedload(DetalleVenta.servicio)
+        ).all()
         subtotal = sum(Decimal(str(detalle.cantidad)) * Decimal(str(detalle.precio_unitario)) for detalle in detalles_venta)
         iva = subtotal * IVA_RATE
 
@@ -618,7 +631,7 @@ def descargar_factura(venta_id):
                         y -= 15
                     y -= 20
             elif detalle.id_servicio:
-                servicio = Servicio.query.get(detalle.id_servicio)
+                servicio = detalle.servicio
                 promocion = Promocion.query.filter_by(id_servicio=detalle.id_servicio).filter(
                     Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
                 ).first()
@@ -666,16 +679,24 @@ def borrar_compra(venta_id):
         flash("No tienes permiso para borrar esta compra.", "danger")
         return redirect(url_for('client.dashboard'))
     try:
+        # Eliminar registros relacionados
         DetalleVenta.query.filter_by(id_venta=venta_id).delete()
+        Pago.query.filter_by(id_venta=venta_id).delete()
+        # Eliminar movimientos de inventario basados en el campo motivo
+        InventarioMovimiento.query.filter(InventarioMovimiento.motivo == f'Venta ID: {venta_id}').delete()
         db.session.delete(venta)
         db.session.commit()
         flash("Compra eliminada con éxito.", "success")
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"Error de integridad al borrar compra: {str(e)}")
+        flash("No se puede borrar la compra debido a restricciones de datos asociados. Contacta al administrador.", "danger")
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error al borrar compra: {str(e)}")
         flash(f"Ocurrió un error al borrar la compra: {str(e)}. Por favor, intenta de nuevo.", "danger")
     return redirect(url_for('client.dashboard'))
-
+    
 @bp.route('/borrar_cita/<int:cita_id>', methods=['POST'])
 @login_required
 def borrar_cita(cita_id):
@@ -690,11 +711,73 @@ def borrar_cita(cita_id):
         db.session.delete(cita)
         db.session.commit()
         flash("Cita eliminada con éxito.", "success")
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"Error de integridad al borrar cita: {str(e)}")
+        flash("No se puede borrar la cita debido a restricciones de datos asociados. Contacta al administrador.", "danger")
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error al borrar cita: {str(e)}")
         flash(f"Ocurrió un error al borrar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
     return redirect(url_for('client.dashboard'))
+
+@bp.route('/editar_cita/<int:cita_id>', methods=['GET', 'POST'])
+@login_required
+def editar_cita(cita_id):
+    if current_user.rol != 'cliente':
+        flash("Acceso denegado. Solo para clientes.", "danger")
+        return redirect(url_for('auth.login'))
+    cita = Cita.query.get_or_404(cita_id)
+    if cita.id_usuario != current_user.id_usuario:
+        flash("No tienes permiso para editar esta cita.", "danger")
+        return redirect(url_for('client.dashboard'))
+    if request.method == 'POST':
+        try:
+            servicio_id = request.form.get('servicio_id')
+            fecha_hora_str = request.form.get('fecha_hora')
+            fecha_hora = datetime.strptime(fecha_hora_str, '%Y-%m-%dT%H:%M')
+            # Validar horario
+            horarios = {
+                0: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+                1: {'inicio': datetime.strptime('08:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+                2: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+                3: None,
+                4: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+                5: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('19:00', '%H:%M').time()},
+                6: {'inicio': datetime.strptime('09:00', '%H:%M').time(), 'fin': datetime.strptime('18:00', '%H:%M').time()}
+            }
+            dia_semana = fecha_hora.weekday()
+            if horarios[dia_semana] is None:
+                flash("Hora o día no disponible. El salón está cerrado este día (Jueves).", "danger")
+                return redirect(url_for('client.editar_cita', cita_id=cita_id))
+            horario_dia = horarios[dia_semana]
+            hora_solicitada = fecha_hora.time()
+            if hora_solicitada < horario_dia['inicio'] or hora_solicitada > horario_dia['fin']:
+                flash("Hora no disponible. Por favor, selecciona una hora dentro del rango permitido.", "danger")
+                return redirect(url_for('client.editar_cita', cita_id=cita_id))
+            minutos = hora_solicitada.minute
+            if minutos % 30 != 0:
+                flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos.", "danger")
+                return redirect(url_for('client.editar_cita', cita_id=cita_id))
+            if fecha_hora < datetime.now():
+                flash("No puedes reservar citas en el pasado.", "danger")
+                return redirect(url_for('client.editar_cita', cita_id=cita_id))
+            cita.id_servicio = servicio_id
+            cita.fecha_hora = fecha_hora
+            cita.estado = 'pendiente'
+            db.session.commit()
+            flash("Cita actualizada con éxito.", "success")
+            return redirect(url_for('client.dashboard'))
+        except ValueError as e:
+            db.session.rollback()
+            logger.error(f"Error en el formato de fecha: {str(e)}")
+            flash("Error en el formato de la fecha. Usa YYYY-MM-DDTHH:MM.", "danger")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error al editar cita: {str(e)}")
+            flash(f"Ocurrió un error al editar la cita: {str(e)}. Por favor, intenta de nuevo.", "danger")
+    servicios = Servicio.query.all()
+    return render_template('editar_cita.html', cita=cita, servicios=servicios)
 
 @bp.route('/reservar_cita', methods=['POST'])
 @login_required
@@ -721,16 +804,16 @@ def reservar_cita():
         }
         dia_semana = fecha_hora.weekday()
         if horarios[dia_semana] is None:
-            flash("Hora o día no disponible en el horario. El salón está cerrado este día (Jueves).", "danger")
+            flash("Hora o día no disponible. El salón está cerrado este día (Jueves).", "danger")
             return redirect(url_for('client.citas'))
         horario_dia = horarios[dia_semana]
         hora_solicitada = fecha_hora.time()
         if hora_solicitada < horario_dia['inicio'] or hora_solicitada > horario_dia['fin']:
-            flash("Hora no disponible en el horario. Por favor, selecciona una hora dentro del rango permitido.", "danger")
+            flash("Hora no disponible. Por favor, selecciona una hora dentro del rango permitido.", "danger")
             return redirect(url_for('client.citas'))
         minutos = hora_solicitada.minute
         if minutos % 30 != 0:
-            flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos (e.g., 9:00, 9:30).", "danger")
+            flash("Hora no disponible. Las citas solo están disponibles en incrementos de 30 minutos.", "danger")
             return redirect(url_for('client.citas'))
         if fecha_hora < datetime.now():
             flash("No puedes reservar citas en el pasado.", "danger")
@@ -882,24 +965,51 @@ def resenas(item_type, item_id):
         flash(f"Ocurrió un error: {str(e)}.", "danger")
         return redirect(url_for('client.productos' if item_type == 'producto' else 'client.servicios'))
 
-# Función auxiliar para generar el contenido LaTeX de la factura
+def escape_latex(text):
+    """Escape special characters for LaTeX compatibility."""
+    if text is None:
+        return ""
+    replacements = {
+        '&': r'\&', '%': r'\%', '$': r'\$', '#': r'\#',
+        '_': r'\_', '{': r'\{', '}': r'\}', '~': r'\textasciitilde',
+        '^': r'\textasciicircum', '\\': r'\textbackslash'
+    }
+    for old, new in replacements.items():
+        text = str(text).replace(old, new)
+    return text
+
 def generate_factura_latex(carrito, venta):
     detalles = carrito.detalles
-    total = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles if d.id_producto or d.id_servicio)
+    subtotal = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles if d.id_producto or d.id_servicio)
+    iva = subtotal * Decimal('0.16')
+    total = subtotal + iva
     table_rows = []
+    now = datetime.utcnow()
     for detalle in detalles:
+        promocion = None
         if detalle.id_producto:
             producto = Producto.query.get(detalle.id_producto)
+            promocion = Promocion.query.filter_by(id_producto=detalle.id_producto).filter(
+                Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+            ).first()
             if producto:
-                row = f"{producto.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
+                row = f"{escape_latex(producto.nombre)} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))}"
+                if promocion:
+                    row += f" \\newline \\scriptsize{{Promoción: {escape_latex(promocion.nombre)} ({promocion.descuento}\\% descuento)}}"
+                row += " \\\\"
                 table_rows.append(row)
         elif detalle.id_servicio:
             servicio = Servicio.query.get(detalle.id_servicio)
+            promocion = Promocion.query.filter_by(id_servicio=detalle.id_servicio).filter(
+                Promocion.fecha_inicio <= now, Promocion.fecha_fin >= now
+            ).first()
             if servicio:
-                row = f"{servicio.nombre} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))} \\\\"
+                row = f"{escape_latex(servicio.nombre)} & {detalle.cantidad or 0} & ${Decimal(str(detalle.precio_unitario or 0)).quantize(Decimal('0.01'))} & ${(Decimal(str(detalle.cantidad or 0)) * Decimal(str(detalle.precio_unitario or 0))).quantize(Decimal('0.01'))}"
+                if promocion:
+                    row += f" \\newline \\scriptsize{{Promoción: {escape_latex(promocion.nombre)} ({promocion.descuento}\\% descuento)}}"
+                row += " \\\\"
                 table_rows.append(row)
     table_content = '\n'.join(table_rows)
-
     return f"""\\documentclass[a4paper,12pt]{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage{{geometry}}
@@ -912,16 +1022,13 @@ def generate_factura_latex(carrito, venta):
 \\fancyhead[L]{{Factura - Casa Bella}}
 \\fancyfoot[C]{{Página \\thepage}}
 \\usepackage{{amiri}}
-
 \\begin{{document}}
-
 \\begin{{center}}
 \\textbf{{Factura}} \\\\
 \\textbf{{Casa Bella}} \\\\
 Fecha: {venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha'} \\\\
-Cliente: {current_user.nombre} (ID: {current_user.id_usuario}) \\\\
+Cliente: {escape_latex(current_user.nombre)} (ID: {current_user.id_usuario}) \\\\
 \\end{{center}}
-
 \\begin{{longtable}}{{lccr}}
 \\toprule
 Producto/Servicio & Cantidad & Precio Unitario & Subtotal \\\\
@@ -934,9 +1041,10 @@ Producto/Servicio & Cantidad & Precio Unitario & Subtotal \\\\
 \\endlastfoot
 {table_content}
 \\midrule
+\\multicolumn{{3}}{{r}}{{Subtotal}} & ${subtotal.quantize(Decimal('0.01'))} \\\\
+\\multicolumn{{3}}{{r}}{{IVA (16\\%)}} & ${iva.quantize(Decimal('0.01'))} \\\\
 \\multicolumn{{3}}{{r}}{{Total}} & ${total.quantize(Decimal('0.01'))} \\\\
 \\bottomrule
 \\end{{longtable}}
-
 \\end{{document}}
 """.replace('\n', '')
