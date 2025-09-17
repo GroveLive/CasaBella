@@ -68,6 +68,9 @@
                                 <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_servicios') }}">Gestión Servicios</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_promociones') }}">Gestión Promociones</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_citas_pendientes') }}">Citas Pendientes</a>
                             </li>
                         {% elif current_user.rol == 'empleado' %}

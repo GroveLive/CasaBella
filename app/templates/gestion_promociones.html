@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Promociones - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <style>
+        .table-responsive {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            border-radius: 10px;
+        }
+        .alert-dismissible {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 400px;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Gestión de Promociones</h1>
+        <p class="lead mb-4">Administra las promociones para productos y servicios.</p>
+        
+        <!-- Botón para abrir el modal de agregar promoción -->
+        <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addPromotionModal">
+            <i class="bi bi-plus-circle me-2"></i>Agregar Promoción
+        </button>
+        
+        <!-- Tabla de promociones -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Lista de Promociones</h5>
+                {% if promociones %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="promotionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Item</th>
+                                    <th>Tipo</th>
+                                    <th>Descuento</th>
+                                    <th>Fecha Inicio</th>
+                                    <th>Fecha Fin</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for promocion in promociones %}
+                                    <tr data-id="{{ promocion.id_promocion }}">
+                                        <td>{{ promocion.nombre }}</td>
+                                        <td>
+                                            {% if promocion.producto %}
+                                                {{ promocion.producto.nombre }}
+                                            {% elif promocion.servicio %}
+                                                {{ promocion.servicio.nombre }}
+                                            {% else %}
+                                                Sin item
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ 'Producto' if promocion.id_producto else 'Servicio' }}</td>
+                                        <td>{{ promocion.descuento }}%</td>
+                                        <td>{{ promocion.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ promocion.fecha_fin.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            {% if promocion.fecha_fin < now %}
+                                                <span class="badge bg-danger">Expirada</span>
+                                            {% elif promocion.fecha_inicio > now %}
+                                                <span class="badge bg-warning">Futura</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Activa</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary edit-promotion" title="Editar" data-id="{{ promocion.id_promocion }}"
+                                                    data-nombre="{{ promocion.nombre }}"
+                                                    data-descripcion="{{ promocion.descripcion or '' }}"
+                                                    data-descuento="{{ promocion.descuento }}"
+                                                    data-fecha_inicio="{{ promocion.fecha_inicio.strftime('%Y-%m-%d') }}"
+                                                    data-fecha_fin="{{ promocion.fecha_fin.strftime('%Y-%m-%d') }}"
+                                                    data-item_type="{{ 'producto' if promocion.id_producto else 'servicio' }}"
+                                                    data-id_item="{{ promocion.id_producto or promocion.id_servicio }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger delete-promotion" title="Eliminar" data-id="{{ promocion.id_promocion }}" data-nombre="{{ promocion.nombre }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center">No hay promociones registradas.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar promoción -->
+    <div class="modal fade" id="addPromotionModal" tabindex="-1" aria-labelledby="addPromotionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPromotionModalLabel">Agregar Promoción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addPromotionForm">
+                        <div class="mb-3">
+                            <label for="add-nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="add-nombre" name="nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-descripcion" class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="add-descripcion" name="descripcion" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-descuento" class="form-label">Descuento (%)</label>
+                            <input type="number" step="0.01" class="form-control" id="add-descuento" name="descuento" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-fecha_inicio" class="form-label">Fecha de Inicio</label>
+                            <input type="date" class="form-control" id="add-fecha_inicio" name="fecha_inicio" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-fecha_fin" class="form-label">Fecha de Fin</label>
+                            <input type="date" class="form-control" id="add-fecha_fin" name="fecha_fin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-item_type" class="form-label">Tipo de Item</label>
+                            <select class="form-select" id="add-item_type" name="item_type" required>
+                                <option value="" disabled selected>Selecciona el tipo</option>
+                                <option value="producto">Producto</option>
+                                <option value="servicio">Servicio</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-id_item" class="form-label">Item</label>
+                            <select class="form-select" id="add-id_item" name="id_item" required>
+                                <option value="" disabled selected>Selecciona un item</option>
+                                <optgroup label="Productos">
+                                    {% for producto in productos %}
+                                        <option value="{{ producto.id_producto }}">{{ producto.nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                <optgroup label="Servicios">
+                                    {% for servicio in servicios %}
+                                        <option value="{{ servicio.id_servicio }}">{{ servicio.nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Agregar</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar promoción -->
+    <div class="modal fade" id="editPromotionModal" tabindex="-1" aria-labelledby="editPromotionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPromotionModalLabel">Editar Promoción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPromotionForm">
+                        <input type="hidden" id="edit-id_promocion" name="id_promocion">
+                        <div class="mb-3">
+                            <label for="edit-nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="edit-nombre" name="nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-descripcion" class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="edit-descripcion" name="descripcion" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-descuento" class="form-label">Descuento (%)</label>
+                            <input type="number" step="0.01" class="form-control" id="edit-descuento" name="descuento" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-fecha_inicio" class="form-label">Fecha de Inicio</label>
+                            <input type="date" class="form-control" id="edit-fecha_inicio" name="fecha_inicio" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-fecha_fin" class="form-label">Fecha de Fin</label>
+                            <input type="date" class="form-control" id="edit-fecha_fin" name="fecha_fin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-item_type" class="form-label">Tipo de Item</label>
+                            <select class="form-select" id="edit-item_type" name="item_type" required>
+                                <option value="producto">Producto</option>
+                                <option value="servicio">Servicio</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-id_item" class="form-label">Item</label>
+                            <select class="form-select" id="edit-id_item" name="id_item" required>
+                                <option value="" disabled>Selecciona un item</option>
+                                <optgroup label="Productos">
+                                    {% for producto in productos %}
+                                        <option value="{{ producto.id_producto }}">{{ producto.nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                <optgroup label="Servicios">
+                                    {% for servicio in servicios %}
+                                        <option value="{{ servicio.id_servicio }}">{{ servicio.nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Actualizar</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para eliminar promoción -->
+    <div class="modal fade" id="deletePromotionModal" tabindex="-1" aria-labelledby="deletePromotionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deletePromotionModalLabel">Eliminar Promoción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar la promoción <strong id="delete-promotion-name"></strong>?</p>
+                    <form id="deletePromotionForm">
+                        <input type="hidden" id="delete-id_promocion" name="id_promocion">
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+            // Function to show alerts
+            function showAlert(type, message) {
+                const alert = $(`
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `);
+                $('body').append(alert);
+                setTimeout(() => alert.alert('close'), 5000);
+            }
+
+            // Function to update item dropdown based on item type
+            function updateItemOptions(modalPrefix) {
+                var itemType = $(`#${modalPrefix}-item_type`).val();
+                var $idItem = $(`#${modalPrefix}-id_item`);
+                $idItem.find('option').hide();
+                $idItem.find('option:first').show();
+                if (itemType === 'producto') {
+                    $idItem.find('optgroup[label="Productos"] option').show();
+                } else if (itemType === 'servicio') {
+                    $idItem.find('optgroup[label="Servicios"] option').show();
+                }
+            }
+
+            // Bind item type change for both modals
+            $('#add-item_type').change(function() { updateItemOptions('add'); });
+            $('#edit-item_type').change(function() { updateItemOptions('edit'); });
+
+            // Handle Add Promotion Form Submission
+            $('#addPromotionForm').submit(function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '{{ url_for("admin.agregar_promocion") }}',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    data: JSON.stringify({
+                        nombre: $('#add-nombre').val(),
+                        descripcion: $('#add-descripcion').val(),
+                        descuento: $('#add-descuento').val(),
+                        fecha_inicio: $('#add-fecha_inicio').val(),
+                        fecha_fin: $('#add-fecha_fin').val(),
+                        item_type: $('#add-item_type').val(),
+                        id_item: $('#add-id_item').val()
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            $('#addPromotionModal').modal('hide');
+                            $('#addPromotionForm')[0].reset();
+                            $('#add-id_item').find('option').show();
+                            const promocion = response.promocion;
+                            $('#promotionsTable tbody').append(`
+                                <tr data-id="${promocion.id_promocion}">
+                                    <td>${promocion.nombre}</td>
+                                    <td>${promocion.item_nombre}</td>
+                                    <td>${promocion.tipo}</td>
+                                    <td>${promocion.descuento}</td>
+                                    <td>${promocion.fecha_inicio}</td>
+                                    <td>${promocion.fecha_fin}</td>
+                                    <td><span class="badge bg-${promocion.estado === 'Activa' ? 'success' : promocion.estado === 'Futura' ? 'warning' : 'danger'}">${promocion.estado}</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary edit-promotion" title="Editar" 
+                                                data-id="${promocion.id_promocion}"
+                                                data-nombre="${promocion.nombre}"
+                                                data-descripcion=""
+                                                data-descuento="${promocion.descuento.replace('%', '')}"
+                                                data-fecha_inicio="${$('#add-fecha_inicio').val()}"
+                                                data-fecha_fin="${$('#add-fecha_fin').val()}"
+                                                data-item_type="${promocion.tipo === 'Producto' ? 'producto' : 'servicio'}"
+                                                data-id_item="${$('#add-id_item').val()}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-promotion" title="Eliminar" 
+                                                data-id="${promocion.id_promocion}" data-nombre="${promocion.nombre}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `);
+                            showAlert('success', response.message);
+                        } else {
+                            showAlert('danger', response.message);
+                        }
+                    },
+                    error: function() {
+                        showAlert('danger', 'Error al procesar la solicitud.');
+                    }
+                });
+            });
+
+            // Handle Edit Promotion Button Click
+            $(document).on('click', '.edit-promotion', function() {
+                const button = $(this);
+                $('#edit-id_promocion').val(button.data('id'));
+                $('#edit-nombre').val(button.data('nombre'));
+                $('#edit-descripcion').val(button.data('descripcion'));
+                $('#edit-descuento').val(button.data('descuento'));
+                $('#edit-fecha_inicio').val(button.data('fecha_inicio'));
+                $('#edit-fecha_fin').val(button.data('fecha_fin'));
+                $('#edit-item_type').val(button.data('item_type'));
+                $('#edit-id_item').val(button.data('id_item'));
+                updateItemOptions('edit');
+                $('#editPromotionModal').modal('show');
+            });
+
+            // Handle Edit Promotion Form Submission
+            $('#editPromotionForm').submit(function(e) {
+                e.preventDefault();
+                const id_promocion = $('#edit-id_promocion').val();
+                $.ajax({
+                    url: '{{ url_for("admin.editar_promocion", id_promocion=0) }}'.replace('0', id_promocion),
+                    method: 'POST',
+                    contentType: 'application/json',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    data: JSON.stringify({
+                        nombre: $('#edit-nombre').val(),
+                        descripcion: $('#edit-descripcion').val(),
+                        descuento: $('#edit-descuento').val(),
+                        fecha_inicio: $('#edit-fecha_inicio').val(),
+                        fecha_fin: $('#edit-fecha_fin').val(),
+                        item_type: $('#edit-item_type').val(),
+                        id_item: $('#edit-id_item').val()
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            $('#editPromotionModal').modal('hide');
+                            const promocion = response.promocion;
+                            const $row = $(`#promotionsTable tr[data-id="${promocion.id_promocion}"]`);
+                            $row.html(`
+                                <td>${promocion.nombre}</td>
+                                <td>${promocion.item_nombre}</td>
+                                <td>${promocion.tipo}</td>
+                                <td>${promocion.descuento}</td>
+                                <td>${promocion.fecha_inicio}</td>
+                                <td>${promocion.fecha_fin}</td>
+                                <td><span class="badge bg-${promocion.estado === 'Activa' ? 'success' : promocion.estado === 'Futura' ? 'warning' : 'danger'}">${promocion.estado}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary edit-promotion" title="Editar" 
+                                            data-id="${promocion.id_promocion}"
+                                            data-nombre="${promocion.nombre}"
+                                            data-descripcion=""
+                                            data-descuento="${promocion.descuento.replace('%', '')}"
+                                            data-fecha_inicio="${$('#edit-fecha_inicio').val()}"
+                                            data-fecha_fin="${$('#edit-fecha_fin').val()}"
+                                            data-item_type="${promocion.tipo === 'Producto' ? 'producto' : 'servicio'}"
+                                            data-id_item="${$('#edit-id_item').val()}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-promotion" title="Eliminar" 
+                                            data-id="${promocion.id_promocion}" data-nombre="${promocion.nombre}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            `);
+                            showAlert('success', response.message);
+                        } else {
+                            showAlert('danger', response.message);
+                        }
+                    },
+                    error: function() {
+                        showAlert('danger', 'Error al procesar la solicitud.');
+                    }
+                });
+            });
+
+            // Handle Delete Promotion Button Click
+            $(document).on('click', '.delete-promotion', function() {
+                const button = $(this);
+                $('#delete-id_promocion').val(button.data('id'));
+                $('#delete-promotion-name').text(button.data('nombre'));
+                $('#deletePromotionModal').modal('show');
+            });
+
+            // Handle Delete Promotion Form Submission
+            $('#deletePromotionForm').submit(function(e) {
+                e.preventDefault();
+                const id_promocion = $('#delete-id_promocion').val();
+                $.ajax({
+                    url: '{{ url_for("admin.eliminar_promocion", id_promocion=0) }}'.replace('0', id_promocion),
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#deletePromotionModal').modal('hide');
+                            $(`#promotionsTable tr[data-id="${id_promocion}"]`).remove();
+                            showAlert('success', response.message);
+                        } else {
+                            showAlert('danger', response.message);
+                        }
+                    },
+                    error: function() {
+                        showAlert('danger', 'Error al procesar la solicitud.');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from app import db
 from app.models.users import Usuario
 from app.models.productos import Producto
@@ -7,13 +7,14 @@ from app.models.servicios import Servicio
 from app.models.citas import Cita
 from app.models.asignaciones import Asignacion
 from app.models.inventario_movimientos import InventarioMovimiento
+from app.models.promociones import Promocion
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 from flask_login import login_required, current_user
 import logging
 from sqlalchemy import func
 from datetime import datetime, timedelta
-from flask import jsonify
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -607,3 +608,209 @@ def gestion_ingresos():
                           titulo_grafica=titulo_grafica,
                           stock_total=stock_total,
                           stock_bajo=stock_bajo)
+
+@bp.route('/gestion_promociones', methods=['GET'])
+@login_required
+def gestion_promociones():
+    if current_user.rol != 'admin':
+        flash("Acceso denegado. Solo para administradores.", "danger")
+        return redirect(url_for('auth.login'))
+    
+    try:
+        # Carga promociones con joinedload para evitar N+1 queries
+        promociones = Promocion.query.options(
+            joinedload(Promocion.producto),
+            joinedload(Promocion.servicio)
+        ).all()
+        productos = Producto.query.all()
+        servicios = Servicio.query.all()
+        
+        return render_template('gestion_promociones.html', 
+                              promociones=promociones, 
+                              productos=productos, 
+                              servicios=servicios,
+                              now=datetime.utcnow())  # Usa utcnow() para consistencia
+    except Exception as e:
+        logger.error(f"Error en gestion_promociones: {str(e)}")
+        flash(f"Error al cargar promociones: {str(e)}", "danger")
+        return redirect(url_for('admin.admin_dashboard'))
+
+@bp.route('/agregar_promocion', methods=['POST'])
+@login_required
+def agregar_promocion():
+    if current_user.rol != 'admin':
+        return jsonify({'success': False, 'message': 'Acceso denegado.'}), 403
+    
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return jsonify({'success': False, 'message': 'Solicitud no válida.'}), 400
+    
+    data = request.get_json()
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion')
+    descuento = data.get('descuento')
+    fecha_inicio = data.get('fecha_inicio')
+    fecha_fin = data.get('fecha_fin')
+    item_type = data.get('item_type')
+    id_item = data.get('id_item')
+    
+    if not all([nombre, descuento, fecha_inicio, fecha_fin, item_type, id_item]):
+        return jsonify({'success': False, 'message': 'Todos los campos son obligatorios.'}), 400
+    
+    try:
+        descuento = float(descuento)
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        
+        if descuento <= 0 or descuento > 100:
+            return jsonify({'success': False, 'message': 'El descuento debe estar entre 0 y 100%.'}), 400
+        
+        if fecha_inicio >= fecha_fin:
+            return jsonify({'success': False, 'message': 'La fecha de inicio debe ser anterior a la fecha de fin.'}), 400
+        
+        if item_type not in ['producto', 'servicio']:
+            return jsonify({'success': False, 'message': 'Tipo de item inválido.'}), 400
+        
+        if item_type == 'producto':
+            item = Producto.query.get_or_404(id_item)
+            id_producto = int(id_item)
+            id_servicio = None
+        else:
+            item = Servicio.query.get_or_404(id_item)
+            id_servicio = int(id_item)
+            id_producto = None
+        
+        promocion = Promocion(
+            nombre=nombre,
+            descripcion=descripcion,
+            descuento=descuento,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            id_producto=id_producto,
+            id_servicio=id_servicio
+        )
+        db.session.add(promocion)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Promoción agregada con éxito.',
+            'promocion': {
+                'id_promocion': promocion.id_promocion,
+                'nombre': promocion.nombre,
+                'item_nombre': item.nombre,
+                'tipo': 'Producto' if id_producto else 'Servicio',
+                'descuento': f"{promocion.descuento}%",
+                'fecha_inicio': promocion.fecha_inicio.strftime('%d/%m/%Y'),
+                'fecha_fin': promocion.fecha_fin.strftime('%d/%m/%Y'),
+                'estado': 'Activa' if promocion.fecha_inicio <= datetime.now() <= promocion.fecha_fin else 'Futura' if promocion.fecha_inicio > datetime.now() else 'Expirada'
+            }
+        })
+    
+    except ValueError:
+        return jsonify({'success': False, 'message': 'El descuento debe ser un número decimal y las fechas deben ser válidas.'}), 400
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Ya existe una promoción con ese nombre.'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@bp.route('/editar_promocion/<int:id_promocion>', methods=['POST'])
+@login_required
+def editar_promocion(id_promocion):
+    if current_user.rol != 'admin':
+        return jsonify({'success': False, 'message': 'Acceso denegado.'}), 403
+    
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return jsonify({'success': False, 'message': 'Solicitud no válida.'}), 400
+    
+    promocion = Promocion.query.get_or_404(id_promocion)
+    data = request.get_json()
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion')
+    descuento = data.get('descuento')
+    fecha_inicio = data.get('fecha_inicio')
+    fecha_fin = data.get('fecha_fin')
+    item_type = data.get('item_type')
+    id_item = data.get('id_item')
+    
+    if not all([nombre, descuento, fecha_inicio, fecha_fin, item_type, id_item]):
+        return jsonify({'success': False, 'message': 'Todos los campos son obligatorios.'}), 400
+    
+    try:
+        descuento = float(descuento)
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        
+        if descuento <= 0 or descuento > 100:
+            return jsonify({'success': False, 'message': 'El descuento debe estar entre 0 y 100%.'}), 400
+        
+        if fecha_inicio >= fecha_fin:
+            return jsonify({'success': False, 'message': 'La fecha de inicio debe ser anterior a la fecha de fin.'}), 400
+        
+        if item_type not in ['producto', 'servicio']:
+            return jsonify({'success': False, 'message': 'Tipo de item inválido.'}), 400
+        
+        if item_type == 'producto':
+            item = Producto.query.get_or_404(id_item)
+            id_producto = int(id_item)
+            id_servicio = None
+        else:
+            item = Servicio.query.get_or_404(id_item)
+            id_servicio = int(id_item)
+            id_producto = None
+        
+        promocion.nombre = nombre
+        promocion.descripcion = descripcion
+        promocion.descuento = descuento
+        promocion.fecha_inicio = fecha_inicio
+        promocion.fecha_fin = fecha_fin
+        promocion.id_producto = id_producto
+        promocion.id_servicio = id_servicio
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Promoción actualizada con éxito.',
+            'promocion': {
+                'id_promocion': promocion.id_promocion,
+                'nombre': promocion.nombre,
+                'item_nombre': item.nombre,
+                'tipo': 'Producto' if id_producto else 'Servicio',
+                'descuento': f"{promocion.descuento}%",
+                'fecha_inicio': promocion.fecha_inicio.strftime('%d/%m/%Y'),
+                'fecha_fin': promocion.fecha_fin.strftime('%d/%m/%Y'),
+                'estado': 'Activa' if promocion.fecha_inicio <= datetime.now() <= promocion.fecha_fin else 'Futura' if promocion.fecha_inicio > datetime.now() else 'Expirada'
+            }
+        })
+    
+    except ValueError:
+        return jsonify({'success': False, 'message': 'El descuento debe ser un número decimal y las fechas deben ser válidas.'}), 400
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Ya existe una promoción con ese nombre.'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@bp.route('/eliminar_promocion/<int:id_promocion>', methods=['POST'])
+@login_required
+def eliminar_promocion(id_promocion):
+    if current_user.rol != 'admin':
+        return jsonify({'success': False, 'message': 'Acceso denegado.'}), 403
+    
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return jsonify({'success': False, 'message': 'Solicitud no válida.'}), 400
+    
+    promocion = Promocion.query.get_or_404(id_promocion)
+    
+    try:
+        db.session.delete(promocion)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Promoción eliminada con éxito.'})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'No se pudo eliminar la promoción, puede estar en uso.'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
