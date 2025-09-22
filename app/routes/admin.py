@@ -8,13 +8,15 @@ from app.models.citas import Cita
 from app.models.asignaciones import Asignacion
 from app.models.inventario_movimientos import InventarioMovimiento
 from app.models.promociones import Promocion
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 from flask_login import login_required, current_user
 import logging
 from sqlalchemy import func
 from datetime import datetime, timedelta
+import json
+
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -475,16 +477,54 @@ def gestion_citas_pendientes():
     if current_user.rol != 'admin':
         flash("Acceso denegado. Solo para administradores.", "danger")
         return redirect(url_for('auth.login'))
-    citas_pendientes = Cita.query.filter_by(estado='pendiente').filter_by(id_empleado=None).all()
+    citas_pendientes = Cita.query.filter_by(estado='pendiente').filter_by(id_empleado=None).options(
+        joinedload(Cita.asignaciones)
+    ).all()
     empleados = Usuario.query.filter_by(rol='empleado').all()
-    return render_template('gestion_citas_pendientes.html', citas_pendientes=citas_pendientes, empleados=empleados)
+
+    # Preprocesar datos de citas para el calendario
+    citas_pendientes_json = []
+    for cita in citas_pendientes:
+        servicio = Servicio.query.get(cita.id_servicio) if cita.id_servicio else None
+        citas_pendientes_json.append({
+            'id': cita.id_cita,
+            'title': f'Cita #{cita.id_cita}',
+            'start': cita.fecha_hora.isoformat(),
+            'extendedProps': {
+                'usuario': Usuario.query.get(cita.id_usuario).nombre if cita.id_usuario else 'Sin asignar',
+                'servicio': servicio.nombre if servicio else 'Sin servicio',
+                'notas': cita.notas or 'Sin notas'
+            }
+        })
+
+    # Convertir a formato compatible con FullCalendar por fecha
+    citas_por_fecha = {}
+    for cita in citas_pendientes:
+        fecha = cita.fecha_hora.date().isoformat()
+        if fecha not in citas_por_fecha:
+            citas_por_fecha[fecha] = []
+        citas_por_fecha[fecha].append(cita)
+
+    citas_pendientes_json_calendar = [{
+        'id': f'day-{fecha}',
+        'title': f'{len(citas)} citas',
+        'start': fecha,
+        'backgroundColor': '#ffeb3b' if len(citas) > 0 else '#ffffff',
+        'borderColor': '#ff9800' if len(citas) > 0 else '#ddd'
+    } for fecha, citas in citas_por_fecha.items()]
+
+    return render_template('gestion_citas_pendientes.html', 
+                          citas_pendientes=citas_pendientes, 
+                          empleados=empleados, 
+                          citas_pendientes_json=json.dumps(citas_pendientes_json),
+                          citas_pendientes_json_calendar=json.dumps(citas_pendientes_json_calendar))
 
 @bp.route('/asignar_empleado/<int:id_cita>', methods=['POST'])
 @login_required
 def asignar_empleado(id_cita):
     if current_user.rol != 'admin':
         flash("Acceso denegado. Solo para administradores.", "danger")
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('admin.gestion_citas_pendientes'))
     cita = Cita.query.get_or_404(id_cita)
     if cita.estado != 'pendiente' or cita.id_empleado is not None:
         flash("Esta cita no puede ser asignada.", "danger")

@@ -1,0 +1,109 @@
+/* Estilos específicos para gestion_citas_pendientes, respetando base.css */
+.container {
+    max-width: 1000px;
+    padding: 2rem;
+    position: relative;
+    animation: fadeIn 1s ease-in;
+}
+
+#calendar {
+    max-width: 100%;
+    margin: 0 auto;
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1rem;
+    box-shadow: var(--shadow-elegant);
+}
+
+.fc-daygrid-day-number {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.fc-event {
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 8px;
+    padding: 0.25rem;
+    color: var(--text-primary) !important;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.fc-event:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.fc-button {
+    background: var(--gradient-primary) !important;
+    border: none !important;
+    color: var(--text-primary) !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.fc-button:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    transform: translateY(-2px) !important;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border-radius: 15px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    color: var(--secondary-color);
+}
+
+.form-label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.form-select, .form-control {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.2);
+}
+
+.btn-primary {
+    background: var(--gradient-primary);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    #calendar {
+        padding: 0.5rem;
+    }
+    .fc-event {
+        font-size: 0.8rem;
+    }
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+}
