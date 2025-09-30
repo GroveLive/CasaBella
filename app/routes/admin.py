@@ -8,6 +8,7 @@ from app.models.citas import Cita
 from app.models.asignaciones import Asignacion
 from app.models.inventario_movimientos import InventarioMovimiento
 from app.models.promociones import Promocion
+from app.models.notificaciones import Notificacion
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
@@ -101,6 +102,26 @@ def admin_dashboard():
             'mes': ingresos_productos['mes'] + ingresos_servicios['mes'],
             'ano': ingresos_productos['ano'] + ingresos_servicios['ano']
         }
+
+        # Notificación si hay stock bajo
+        if stock_bajo > 0:
+            notificacion = Notificacion(
+                id_usuario=current_user.id_usuario,
+                mensaje=f"Hay {stock_bajo} productos con stock bajo (menor o igual a stock mínimo).",
+                tipo='inventario'
+            )
+            db.session.add(notificacion)
+            db.session.commit()
+
+        # Notificación si hay movimientos recientes
+        if movimientos_recientes > 0:
+            notificacion = Notificacion(
+                id_usuario=current_user.id_usuario,
+                mensaje=f"Se han registrado {movimientos_recientes} movimientos de inventario en los últimos 7 días.",
+                tipo='inventario'
+            )
+            db.session.add(notificacion)
+            db.session.commit()
 
         logger.debug(f"Ingresos calculados: {ingresos}")
         logger.debug(f"Inventario - Stock total: {stock_total}, Stock bajo: {stock_bajo}, Movimientos recientes: {movimientos_recientes}")
@@ -538,6 +559,16 @@ def asignar_empleado(id_cita):
     db.session.add(asignacion)
     cita.id_empleado = id_empleado
     db.session.commit()
+    # Notificación al empleado asignado
+    empleado = Usuario.query.get(id_empleado)
+    servicio = Servicio.query.get(cita.id_servicio)
+    notificacion = Notificacion(
+        id_usuario=id_empleado,
+        mensaje=f"Te han asignado una nueva cita para el {cita.fecha_hora.strftime('%Y-%m-%d %H:%M')} con el servicio '{servicio.nombre}'.",
+        tipo='cita'
+    )
+    db.session.add(notificacion)
+    db.session.commit()
     flash("Cita asignada con éxito.", "success")
     return redirect(url_for('admin.gestion_citas_pendientes'))
 
@@ -730,6 +761,14 @@ def agregar_promocion():
         )
         db.session.add(promocion)
         db.session.commit()
+        # Notificación de promoción creada
+        notificacion = Notificacion(
+            id_usuario=current_user.id_usuario,
+            mensaje=f"Promoción '{nombre}' creada con éxito para {item_type} '{item.nombre}' con {descuento}% de descuento.",
+            tipo='promocion'
+        )
+        db.session.add(notificacion)
+        db.session.commit()
         
         return jsonify({
             'success': True,
@@ -808,6 +847,14 @@ def editar_promocion(id_promocion):
         promocion.id_producto = id_producto
         promocion.id_servicio = id_servicio
         db.session.commit()
+        # Notificación de promoción editada
+        notificacion = Notificacion(
+            id_usuario=current_user.id_usuario,
+            mensaje=f"Promoción '{nombre}' actualizada con éxito para {item_type} '{item.nombre}' con {descuento}% de descuento.",
+            tipo='promocion'
+        )
+        db.session.add(notificacion)
+        db.session.commit()
         
         return jsonify({
             'success': True,
@@ -845,7 +892,17 @@ def eliminar_promocion(id_promocion):
     promocion = Promocion.query.get_or_404(id_promocion)
     
     try:
+        item_type = 'producto' if promocion.id_producto else 'servicio'
+        item = Producto.query.get(promocion.id_producto) if promocion.id_producto else Servicio.query.get(promocion.id_servicio)
         db.session.delete(promocion)
+        db.session.commit()
+        # Notificación de promoción eliminada
+        notificacion = Notificacion(
+            id_usuario=current_user.id_usuario,
+            mensaje=f"Promoción '{promocion.nombre}' eliminada con éxito para {item_type} '{item.nombre}'.",
+            tipo='promocion'
+        )
+        db.session.add(notificacion)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Promoción eliminada con éxito.'})
     except IntegrityError:
@@ -854,3 +911,4 @@ def eliminar_promocion(id_promocion):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+    

@@ -1,0 +1,74 @@
+<!-- templates/notificaciones.html -->
+{% extends "base.html" %}
+{% block title %}Notificaciones - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notificaciones.css') }}">
+{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <h2 class="text-center mb-4 text-primary fw-bold">Notificaciones</h2>
+    
+    {% if notificaciones %}
+        <div class="list-group">
+            {% for notificacion in notificaciones %}
+                <a href="#" class="list-group-item list-group-item-action {% if notificacion.leida %}list-group-item-secondary{% else %}list-group-item-primary{% endif %}" 
+                   data-id="{{ notificacion.id_notificacion }}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ notificacion.mensaje }}</h5>
+                        <small class="text-muted">{{ notificacion.fecha_envio.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <p class="mb-1">
+                        Tipo: <span class="badge bg-{% if notificacion.tipo == 'cita' %}info 
+                            {% elif notificacion.tipo == 'promocion' %}success 
+                            {% elif notificacion.tipo == 'inventario' %}warning 
+                            {% endif %}">{{ notificacion.tipo }}</span>
+                    </p>
+                    {% if not notificacion.leida %}
+                        <button class="btn btn-sm btn-success mark-as-read" data-id="{{ notificacion.id_notificacion }}">Marcar como leída</button>
+                    {% endif %}
+                    <form action="{{ url_for('notificaciones.eliminar', id_notificacion=notificacion.id_notificacion) }}" method="post" style="display:inline;" class="delete-form">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar esta notificación?');">Eliminar</button>
+                    </form>
+                </a>
+            {% endfor %}
+        </div>
+        {% if notificaciones|length > 5 %}
+            <div class="text-center mt-3">
+                <a href="{{ url_for('notificaciones.notificaciones_dashboard', mark_as_read=True) }}" class="btn btn-primary mark-all-read">Marcar todas como leídas</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            No tienes notificaciones pendientes.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Marcar como leída individual
+        document.querySelectorAll('.mark-as-read').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const id = this.getAttribute('data-id');
+                fetch(`/notificaciones/mark/${id}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.closest('.list-group-item').classList.remove('list-group-item-primary');
+                            this.closest('.list-group-item').classList.add('list-group-item-secondary');
+                            this.remove();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // Marcar todas como leídas (mantiene el enlace actual)
+        // El enlace ya redirige con el parámetro mark_as_read=true
+    });
+</script>
+{% endblock %}

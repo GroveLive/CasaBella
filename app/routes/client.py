@@ -826,6 +826,23 @@ def reservar_cita():
         )
         db.session.add(cita)
         db.session.commit()
+        # Notificación para el cliente
+        notificacion_cliente = Notificacion(
+            id_usuario=current_user.id_usuario,
+            mensaje=f"Cita reservada con éxito para el {fecha_hora.strftime('%Y-%m-%d %H:%M')} con el servicio {Servicio.query.get(servicio_id).nombre}.",
+            tipo='cita'
+        )
+        db.session.add(notificacion_cliente)
+        # Notificación para el administrador
+        admin = Usuario.query.filter_by(rol='admin').first()  # Obtener el primer administrador
+        if admin:
+            notificacion_admin = Notificacion(
+                id_usuario=admin.id_usuario,
+                mensaje=f"Nueva cita pendiente reservada por {current_user.nombre} para el {fecha_hora.strftime('%Y-%m-%d %H:%M')} con el servicio {Servicio.query.get(servicio_id).nombre}. Por favor, asigna un empleado.",
+                tipo='cita'
+            )
+            db.session.add(notificacion_admin)
+        db.session.commit()
         flash("Cita reservada con éxito.", "success")
     except ValueError as e:
         db.session.rollback()
@@ -1048,3 +1065,4 @@ Producto/Servicio & Cantidad & Precio Unitario & Subtotal \\\\
 \\end{{longtable}}
 \\end{{document}}
 """.replace('\n', '')
+

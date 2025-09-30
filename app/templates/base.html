@@ -127,6 +127,13 @@
                         </a>
                     {% endif %}
                     
+                    <!-- Notifications Button -->
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('notificaciones.notificaciones_dashboard') }}" class="btn btn-outline-light position-relative me-2">
+                            <i class="bi bi-bell"></i>
+                        </a>
+                    {% endif %}
+                    
                     <!-- Guest Navigation -->
                     {% if not current_user.is_authenticated %}
                     <div class="guest-nav">

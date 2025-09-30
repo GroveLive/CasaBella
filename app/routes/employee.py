@@ -8,6 +8,7 @@ from app.models.detalle_ventas import DetalleVenta
 from app.models.pagos import Pago
 from app.models.users import Usuario
 from app.models.inventario_movimientos import InventarioMovimiento
+from app.models.notificaciones import Notificacion
 from flask_login import login_required, current_user
 import logging
 from datetime import datetime
@@ -82,7 +83,18 @@ def completar_cita(id_cita):
     
     cita.estado = 'completada'
     db.session.commit()
-
+    # Notificación al cliente
+    if cita.id_usuario:
+        cliente = Usuario.query.get(cita.id_usuario)
+        servicio = Servicio.query.get(cita.id_servicio)
+        notificacion = Notificacion(
+            id_usuario=cita.id_usuario,
+            mensaje=f"Tu cita para el {cita.fecha_hora.strftime('%Y-%m-%d %H:%M')} con el servicio '{servicio.nombre}' ha sido completada por {current_user.nombre}.",
+            tipo='cita'
+        )
+        db.session.add(notificacion)
+        db.session.commit()
+    
     return redirect(url_for('employee.generar_factura', id_cita=id_cita))
 
 @bp.route('/generar_factura/<int:id_cita>')

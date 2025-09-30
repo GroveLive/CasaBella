@@ -44,8 +44,11 @@ def create_app():
     from app.routes.admin import bp as admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')  # Admin
     from app.routes.employee import bp as employee_bp
-    app.register_blueprint(employee_bp, url_prefix='/employee')  # Empleado
-
+    app.register_blueprint(employee_bp, url_prefix='/employee') 
+     # Empleado
+    from app.routes.notificaciones import bp as notificaciones_bp
+    app.register_blueprint(notificaciones_bp, url_prefix='/notificaciones')  # Notificaciones       
+    
     # Importación de modelos dentro del contexto de la aplicación
     with app.app_context():
         try:
