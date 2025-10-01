@@ -1,0 +1,109 @@
+/* Estilos específicos para trabajar_citas, respetando base.css */
+.container {
+    max-width: 1000px;
+    padding: 2rem;
+    position: relative;
+    animation: fadeIn 1s ease-in;
+}
+
+#calendar {
+    max-width: 100%;
+    margin: 0 auto;
+    background: var(--card-bg); /* Negro azulado opulento o gris claro según modo */
+    border-radius: 15px;
+    padding: 1rem;
+    box-shadow: var(--shadow-elegant); /* Sombras elegantes y frías */
+}
+
+.fc-daygrid-day-number {
+    color: var(--text-primary); /* Blanco puro o negro profundo */
+    font-weight: 600;
+}
+
+.fc-event {
+    background: var(--gradient-primary); /* Degradado azul real a zafiro */
+    border: 2px solid var(--secondary-color); /* Azul zafiro como borde */
+    border-radius: 8px;
+    padding: 0.25rem;
+    color: var(--text-primary) !important; /* Blanco o negro según modo */
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.fc-event:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5); /* Sombra basada en primary-color */
+}
+
+.fc-button {
+    background: var(--gradient-primary) !important; /* Degradado azul real a zafiro */
+    border: none !important;
+    color: var(--text-primary) !important; /* Blanco o negro */
+    border-radius: 8px !important;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.fc-button:hover {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 80%, black) 0%, var(--secondary-color) 100%) !important; /* Oscurecido elegante */
+    transform: translateY(-2px) !important;
+}
+
+.modal-content {
+    background: var(--card-bg); /* Negro azulado opulento o gris claro */
+    color: var(--text-primary); /* Blanco o negro */
+    border-radius: 15px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color); /* Plata metálica o suave */
+}
+
+.modal-title {
+    color: var(--secondary-color); /* Azul zafiro */
+}
+
+.form-label {
+    color: var(--text-primary); /* Blanco o negro */
+    font-weight: 600;
+}
+
+.form-select, .form-control {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary); /* Blanco o negro */
+    border: 2px solid var(--border-color); /* Plata metálica o suave */
+    border-radius: 10px;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--secondary-color); /* Azul zafiro */
+    box-shadow: 0 0 0 0.2rem rgba(var(--secondary-color-rgb), 0.2);
+}
+
+.btn-primary {
+    background: var(--gradient-primary); /* Degradado azul real a zafiro */
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 80%, black) 0%, var(--secondary-color) 100%); /* Oscurecido elegante */
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    #calendar {
+        padding: 0.5rem;
+    }
+    .fc-event {
+        font-size: 0.8rem;
+    }
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+}

@@ -2,6 +2,7 @@
 {% block title %}Trabajar Citas - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/trabajar_citas.css') }}">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
@@ -16,52 +17,101 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        {% if citas %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID Cita</th>
-                        <th>Usuario</th>
-                        <th>Servicio</th>
-                        <th>Fecha y Hora</th>
-                        <th>Estado</th>
-                        <th>Notas</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cita in citas %}
-                    <tr>
-                        <td>{{ cita.id_cita }}</td>
-                        <td>{{ cita.usuario.nombre if cita.usuario else 'Sin asignar' }}</td>
-                        <td>{{ cita.servicio.nombre if cita.servicio else 'Sin servicio' }}</td>
-                        <td>{{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>{{ cita.estado }}</td>
-                        <td>{{ cita.notas|default('Sin notas', true) }}</td>
-                        <td>
-                            {% if cita.estado == 'pendiente' %}
-                                <form method="POST" action="{{ url_for('employee.confirmar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
-                                    <button type="submit" class="btn btn-success btn-sm me-2">Confirmar</button>
-                                </form>
-                            {% elif cita.estado == 'confirmada' %}
-                                <form method="POST" action="{{ url_for('employee.completar_cita', id_cita=cita.id_cita) }}" style="display:inline;">
-                                    <button type="submit" class="btn btn-primary btn-sm">Completar y Facturar</button>
-                                </form>
-                            {% elif cita.estado == 'completada' %}
-                                <a href="{{ url_for('employee.generar_factura', id_cita=cita.id_cita) }}" class="btn btn-info btn-sm">Descargar Factura</a>
-                            {% else %}
-                                <span class="badge bg-secondary">Sin acciones</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p class="text-info">No tienes citas asignadas actualmente.</p>
-        {% endif %}
+        <div id="calendar"></div>
+    </div>
+
+    <!-- Modal para citas por día -->
+    <div class="modal fade" id="citasDiaModal" tabindex="-1" aria-labelledby="citasDiaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="citasDiaModalLabel">Mis Citas - <span id="modalFecha"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="citasDiaBody">
+                    <!-- Las citas se cargarán dinámicamente aquí -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
 {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                events: {{ citas_json_calendar|safe }},
+                eventContent: function(arg) {
+                    return { html: '<b>' + arg.event.title + '</b>' };
+                },
+                dateClick: function(info) {
+                    var fecha = info.dateStr;
+                    document.getElementById('modalFecha').textContent = new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    var citasDiaBody = document.getElementById('citasDiaBody');
+                    citasDiaBody.innerHTML = '';
+                    var citasDelDia = {{ citas_json|safe }}.filter(cita => {
+                        return new Date(cita.start).toISOString().split('T')[0] === fecha;
+                    });
+                    if (citasDelDia.length > 0) {
+                        citasDelDia.forEach(cita => {
+                            var card = document.createElement('div');
+                            card.className = 'card mb-3';
+                            var cardBody = document.createElement('div');
+                            cardBody.className = 'card-body';
+                            cardBody.innerHTML = `
+                                <h6 class="card-title">Cita #${cita.id}</h6>
+                                <p class="card-text">
+                                    Usuario: ${cita.extendedProps.usuario}<br>
+                                    Servicio: ${cita.extendedProps.servicio}<br>
+                                    Estado: ${cita.extendedProps.estado}<br>
+                                    Notas: ${cita.extendedProps.notas}
+                                </p>
+                            `;
+                            var actionDiv = document.createElement('div');
+                            if (cita.extendedProps.estado === 'pendiente') {
+                                var confirmForm = document.createElement('form');
+                                confirmForm.method = 'POST';
+                                confirmForm.action = '/employee/confirmar_cita/' + cita.id; // URL absoluta para evitar problemas con url_for
+                                confirmForm.style.display = 'inline';
+                                confirmForm.innerHTML = '<button type="submit" class="btn btn-success btn-sm me-2">Confirmar</button>';
+                                actionDiv.appendChild(confirmForm);
+                            } else if (cita.extendedProps.estado === 'confirmada') {
+                                var completeForm = document.createElement('form');
+                                completeForm.method = 'POST';
+                                completeForm.action = '/employee/completar_cita/' + cita.id; // URL absoluta
+                                completeForm.style.display = 'inline';
+                                completeForm.innerHTML = '<button type="submit" class="btn btn-primary btn-sm">Completar y Facturar</button>';
+                                actionDiv.appendChild(completeForm);
+                            } else if (cita.extendedProps.estado === 'completada') {
+                                var facturaLink = document.createElement('a');
+                                facturaLink.href = '/employee/generar_factura/' + cita.id; // URL absoluta
+                                facturaLink.className = 'btn btn-info btn-sm';
+                                facturaLink.textContent = 'Descargar Factura';
+                                actionDiv.appendChild(facturaLink);
+                            } else {
+                                var badge = document.createElement('span');
+                                badge.className = 'badge bg-secondary';
+                                badge.textContent = 'Sin acciones';
+                                actionDiv.appendChild(badge);
+                            }
+                            cardBody.appendChild(actionDiv);
+                            card.appendChild(cardBody);
+                            citasDiaBody.appendChild(card);
+                        });
+                    } else {
+                        citasDiaBody.innerHTML = '<p>No tienes citas asignadas para esta fecha.</p>';
+                    }
+                    var modal = new bootstrap.Modal(document.getElementById('citasDiaModal'));
+                    modal.show();
+                }
+            });
+            calendar.render();
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

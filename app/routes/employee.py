@@ -1,3 +1,4 @@
+# app/routes/employee.py
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
 from app import db
 from app.models.citas import Cita
@@ -20,6 +21,8 @@ from reportlab.lib.utils import ImageReader
 from reportlab.lib.colors import white
 from PIL import Image, ImageDraw
 import io
+import json
+from sqlalchemy.orm import joinedload
 
 bp = Blueprint('employee', __name__, url_prefix='/employee')
 
@@ -46,15 +49,58 @@ def trabajar_citas():
     if current_user.rol != 'empleado':
         flash("Acceso denegado. Solo para empleados.", "danger")
         return redirect(url_for('auth.login'))
-    citas = Cita.query.filter_by(id_empleado=current_user.id_usuario).order_by(Cita.fecha_hora).all()
-    return render_template('trabajar_citas.html', citas=citas)
+    
+    # Obtener citas asignadas al empleado actual usando joinedload para cliente y empleado
+    citas = Cita.query.filter_by(id_empleado=current_user.id_usuario).order_by(Cita.fecha_hora).options(
+        joinedload(Cita.cliente),
+        joinedload(Cita.empleado)
+    ).all()
+    
+    # Preprocesar datos de citas para el calendario
+    citas_json = []
+    for cita in citas:
+        # Obtener servicio manualmente ya que no hay relación directa en Cita
+        servicio = Servicio.query.get(cita.id_servicio) if cita.id_servicio else None
+        
+        citas_json.append({
+            'id': cita.id_cita,
+            'title': f'Cita #{cita.id_cita}',
+            'start': cita.fecha_hora.isoformat(),
+            'extendedProps': {
+                'usuario': cita.cliente.nombre if cita.cliente else 'Sin asignar',
+                'servicio': servicio.nombre if servicio else 'Sin servicio',
+                'notas': cita.notas or 'Sin notas',
+                'estado': cita.estado
+            }
+        })
+
+    # Convertir a formato compatible con FullCalendar por fecha
+    citas_por_fecha = {}
+    for cita in citas:
+        fecha = cita.fecha_hora.date().isoformat()
+        if fecha not in citas_por_fecha:
+            citas_por_fecha[fecha] = []
+        citas_por_fecha[fecha].append(cita)
+
+    citas_json_calendar = [{
+        'id': f'day-{fecha}',
+        'title': f'{len(citas)} citas',
+        'start': fecha,
+        'backgroundColor': '#ffeb3b' if len(citas) > 0 else '#ffffff',
+        'borderColor': '#ff9800' if len(citas) > 0 else '#ddd'
+    } for fecha, citas in citas_por_fecha.items()]
+
+    return render_template('trabajar_citas.html', 
+                          citas=citas, 
+                          citas_json=json.dumps(citas_json),
+                          citas_json_calendar=json.dumps(citas_json_calendar))
 
 @bp.route('/confirmar_cita/<int:id_cita>', methods=['POST'])
 @login_required
 def confirmar_cita(id_cita):
     if current_user.rol != 'empleado':
         flash("Acceso denegado. Solo para empleados.", "danger")
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('employee.trabajar_citas'))
     cita = Cita.query.get_or_404(id_cita)
     if cita.id_empleado != current_user.id_usuario:
         flash("No tienes permiso para confirmar esta cita.", "danger")
@@ -72,7 +118,7 @@ def confirmar_cita(id_cita):
 def completar_cita(id_cita):
     if current_user.rol != 'empleado':
         flash("Acceso denegado. Solo para empleados.", "danger")
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('employee.trabajar_citas'))
     cita = Cita.query.get_or_404(id_cita)
     if cita.id_empleado != current_user.id_usuario:
         flash("No tienes permiso para completar esta cita.", "danger")
@@ -102,7 +148,7 @@ def completar_cita(id_cita):
 def generar_factura(id_cita):
     if current_user.rol != 'empleado':
         flash("Acceso denegado. Solo para empleados.", "danger")
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('employee.trabajar_citas'))
     
     cita = Cita.query.get_or_404(id_cita)
     if cita.estado != 'completada':
