@@ -129,95 +129,121 @@
         </div>
     </section>
 
-    <!-- Testimonials Section -->
-    <section class="py-5" id="testimonios">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold text-custom-accent mb-3">Lo que dicen nuestros clientes</h2>
-                <p class="lead mb-4">Testimonios reales de clientes satisfechos</p>
+   <!-- Sección de Nuestro Personal con Cards Dinámicas -->
+<section id="nuestro-personal" class="container mt-5">
+    <h2 class="text-center mb-4">Nuestro Personal</h2>
+    <div class="row">
+        <!-- Empleado 1 -->
+        <div class="col-md-4 text-center">
+            <div class="employee-card">
+                <img src="{{ url_for('static', filename='images/empleado1.jpg') }}" alt="Foto de Ana Gómez" class="img-fluid rounded-circle">
+                <h4 class="mt-3">Ana Gómez</h4>
+                <p class="text-muted"><strong>Especialización:</strong> Estilista</p>
+                <p>Experta en cortes modernos y coloración, dedicada a realzar tu belleza natural.</p>
+                <a href="mailto:ana.gomez@casabella.com" class="btn">Contactar</a>
             </div>
-            
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
-                    <div class="card testimonial-card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex mb-3">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                            </div>
-                            <p class="card-text mb-4">
-                                "Excelente servicio de manicure, muy profesional. El resultado superó mis expectativas."
-                            </p>
-                            <div class="d-flex align-items-center">
-                                <div class="testimonial-avatar bg-primary text-white rounded-circle me-3">
-                                    AL
+        </div>
+        <!-- Empleado 2 -->
+        <div class="col-md-4 text-center">
+            <div class="employee-card">
+                <img src="{{ url_for('static', filename='images/empleado1.jpg') }}" alt="Foto de Carlos Ruiz" class="img-fluid rounded-circle">
+                <h4 class="mt-3">Carlos Ruiz</h4>
+                <p class="text-muted"><strong>Especialización:</strong> Barbero</p>
+                <p>Maestro en cortes clásicos y afeitadas precisas, con un toque personal.</p>
+                <a href="mailto:carlos.ruiz@casabella.com" class="btn">Contactar</a>
+            </div>
+        </div>
+        <!-- Empleado 3 -->
+        <div class="col-md-4 text-center">
+            <div class="employee-card">
+                <img src="{{ url_for('static', filename='images/empleado1.jpg') }}" alt="Foto de María López" class="img-fluid rounded-circle">
+                <h4 class="mt-3">María López</h4>
+                <p class="text-muted"><strong>Especialización:</strong> Manicurista</p>
+                <p>Especialista en uñas artísticas y cuidados, transformando tus manos con estilo.</p>
+                <a href="mailto:maria.lopez@casabella.com" class="btn">Contactar</a>
+            </div>
+        </div>
+    </div>
+</section>
+    <!-- Preguntas Frecuentes Section con Carrusel Gigantesco -->
+<section class="py-5" id="preguntas-frecuentes">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold text-custom-accent mb-3">Preguntas Frecuentes</h2>
+            <p class="lead mb-4">Desliza para descubrir respuestas a tus dudas</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div id="faqCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <div class="card text-center shadow-lg">
+                                <img src="{{ url_for('static', filename='images/faq-reserva.jpg') }}" class="card-img-top" alt="Reserva de cita" style="height: 550px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">¿Cómo puedo reservar una cita?</h5>
+                                    <p class="card-text">Puedes reservar tu cita a través de nuestra página web haciendo clic en 'Reservar Cita' o visitándonos en Guavatá.</p>
                                 </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Ana López</h6>
-                                    <small>Cliente frecuente</small>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="card text-center shadow-lg">
+                                <img src="{{ url_for('static', filename='images/faq-servicios.jpg') }}" class="card-img-top" alt="Servicios ofrecidos" style="height: 550px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">¿Qué servicios ofrecen?</h5>
+                                    <p class="card-text">Ofrecemos cortes, coloración, manicura, pedicura, afeitadas y tratamientos capilares.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="card text-center shadow-lg">
+                                <img src="{{ url_for('static', filename='images/faq-tiempo.jpg') }}" class="card-img-top" alt="Tiempo por servicio" style="height: 550px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">¿Cuánto es el promedio de tiempo por servicio?</h5>
+                                    <p class="card-text">El tiempo promedio varía entre 30 min y 2 horas, consulta al reservar.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="card text-center shadow-lg">
+                                <img src="{{ url_for('static', filename='images/faq-pago.jpg') }}" class="card-img-top" alt="Métodos de pago" style="height: 550px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">¿Qué métodos de pago aceptan?</h5>
+                                    <p class="card-text">Aceptamos efectivo, tarjetas y transferencias.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="card text-center shadow-lg">
+                                <img src="{{ url_for('static', filename='images/faq-productos.jpg') }}" class="card-img-top" alt="Productos disponibles" style="height: 550px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">¿Cuáles productos están disponibles?</h5>
+                                    <p class="card-text">Ofrecemos una variedad de productos de belleza en nuestra tienda en línea.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="card text-center shadow-lg">
+                                <img src="{{ url_for('static', filename='images/faq-contacto.jpg') }}" class="card-img-top" alt="Contacto" style="height: 550px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">¿Cómo puedo contactarlos?</h5>
+                                    <p class="card-text">Puedes contactarnos vía teléfono o correo electrónico listados en 'Contacto'.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="card testimonial-card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex mb-3">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                            </div>
-                            <p class="card-text mb-4">
-                                "El ambiente es muy relajante y el personal es súper amable. Definitivamente regresaré."
-                            </p>
-                            <div class="d-flex align-items-center">
-                                <div class="testimonial-avatar bg-primary text-white rounded-circle me-3">
-                                    MG
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">María García</h6>
-                                    <small>Cliente nueva</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="card testimonial-card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex mb-3">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                            </div>
-                            <p class="card-text mb-4">
-                                "Los productos que venden son de excelente calidad. Mi esmalte duró más de dos semanas."
-                            </p>
-                            <div class="d-flex align-items-center">
-                                <div class="testimonial-avatar bg-primary text-white rounded-circle me-3">
-                                    CR
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Carmen Ruiz</h6>
-                                    <small>Cliente VIP</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#faqCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#faqCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Promotion Section with New Design -->
     <section class="py-5" id="promocion">
