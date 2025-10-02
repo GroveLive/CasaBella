@@ -2,22 +2,7 @@
 {% block title %}Gestión de Promociones - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <style>
-        .table-responsive {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        .modal-content {
-            border-radius: 10px;
-        }
-        .alert-dismissible {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-            max-width: 400px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_promociones.css') }}">
 {% endblock %}
 {% block content %}
     <div class="container mt-5">
@@ -34,7 +19,8 @@
             <div class="card-body">
                 <h5 class="card-title">Lista de Promociones</h5>
                 {% if promociones %}
-                    <div class="table-responsive">
+                    <!-- Desktop Table -->
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover" id="promotionsTable">
                             <thead>
                                 <tr>
@@ -93,6 +79,56 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Mobile Cards -->
+                    <div class="d-md-none">
+                        {% for promocion in promociones %}
+                            <div class="table-card mb-3">
+                                <div class="card-content">
+                                    <h5>Promoción #{{ promocion.id_promocion }}</h5>
+                                    <p><strong>Nombre:</strong> {{ promocion.nombre }}</p>
+                                    <p><strong>Item:</strong> 
+                                        {% if promocion.producto %}
+                                            {{ promocion.producto.nombre }}
+                                        {% elif promocion.servicio %}
+                                            {{ promocion.servicio.nombre }}
+                                        {% else %}
+                                            Sin item
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Tipo:</strong> {{ 'Producto' if promocion.id_producto else 'Servicio' }}</p>
+                                    <p><strong>Descuento:</strong> {{ promocion.descuento }}%</p>
+                                    <p><strong>Fecha Inicio:</strong> {{ promocion.fecha_inicio.strftime('%d/%m/%Y') }}</p>
+                                    <p><strong>Fecha Fin:</strong> {{ promocion.fecha_fin.strftime('%d/%m/%Y') }}</p>
+                                    <p><strong>Estado:</strong> 
+                                        {% if promocion.fecha_fin < now %}
+                                            <span class="badge bg-danger">Expirada</span>
+                                        {% elif promocion.fecha_inicio > now %}
+                                            <span class="badge bg-warning">Futura</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Activa</span>
+                                        {% endif %}
+                                    </p>
+                                    <div class="card-actions">
+                                        <button class="btn btn-sm btn-outline-primary edit-promotion" title="Editar" 
+                                                data-id="{{ promocion.id_promocion }}"
+                                                data-nombre="{{ promocion.nombre }}"
+                                                data-descripcion="{{ promocion.descripcion or '' }}"
+                                                data-descuento="{{ promocion.descuento }}"
+                                                data-fecha_inicio="{{ promocion.fecha_inicio.strftime('%Y-%m-%d') }}"
+                                                data-fecha_fin="{{ promocion.fecha_fin.strftime('%Y-%m-%d') }}"
+                                                data-item_type="{{ 'producto' if promocion.id_producto else 'servicio' }}"
+                                                data-id_item="{{ promocion.id_producto or promocion.id_servicio }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-promotion" title="Eliminar" 
+                                                data-id="{{ promocion.id_promocion }}" data-nombre="{{ promocion.nombre }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
                 {% else %}
                     <p class="text-center">No hay promociones registradas.</p>

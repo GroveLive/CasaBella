@@ -76,6 +76,7 @@
                             <li class="nav-item">
                                 <a class="nav-link fw-medium" href="{{ url_for('admin.gestion_citas_pendientes') }}">Citas Pendientes</a>
                             </li>
+                            
                         {% elif current_user.rol == 'empleado' %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint == 'home.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
