@@ -53,9 +53,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint == 'auth.cliente_dashboard' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('auth.cliente_dashboard') }}">Dashboard Cliente</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link fw-medium" href="#contacto">Contacto</a>
-                            </li>
+                         
                         {% elif current_user.rol == 'admin' %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint == 'home.index' %}active fw-medium{% else %}fw-medium{% endif %}" href="{{ url_for('home.index') }}">Inicio</a>
@@ -167,7 +165,7 @@
                                     <small class="user-role text-muted d-block">{{ current_user.rol }}</small>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('auth.cliente_dashboard' if current_user.rol == 'cliente' else 'auth.admin_dashboard' if current_user.rol == 'admin' else 'auth.empleado_dashboard') }}"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('client.perfil') }}"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('client.citas') }}"><i class="bi bi-calendar me-2"></i>Mis Citas</a></li>
                                 {% if current_user.rol == 'admin' %}
                                 <li class="admin-only"><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}"><i class="bi bi-gear me-2"></i>Panel Admin</a></li>

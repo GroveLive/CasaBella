@@ -4,8 +4,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/carrito.css') }}">
 {% endblock %}
 {% block content %}
-    <div class="container mt-5">
-        <h1 class="mb-5 text-center text-secondary">Mi Carrito</h1>
+    <div class="container">
+        <h1>Mi Carrito</h1>
+        <p class="lead">Revisa tus productos y servicios antes de proceder al pago.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -18,64 +19,51 @@
         {% endwith %}
         {% if carrito and carrito.detalles %}
             {% set total = 0 %}
-            <div class="cart-table-wrapper">
-                <table class="table cart-table">
-                    <thead>
-                        <tr>
-                            <th class="text-center">Producto/Servicio</th>
-                            <th class="text-center">Cantidad</th>
-                            <th class="text-center">Precio Unitario</th>
-                            <th class="text-center">Subtotal</th>
-                            <th class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for detalle in carrito.detalles %}
-                            {% set producto = detalle.producto %}
-                            {% set servicio = detalle.servicio %}
-                            {% set precio_unitario = detalle.precio_unitario if detalle.precio_unitario is not none else 0.00 %}
-                            {% set cantidad = detalle.cantidad if detalle.cantidad is not none else 0 %}
-                            {% set subtotal = cantidad * precio_unitario %}
-                            {% set total = total + subtotal %}
-                            {% set promocion = promociones | selectattr("id_producto", "equalto", detalle.id_producto) | first if detalle.id_producto else (promociones | selectattr("id_servicio", "equalto", detalle.id_servicio) | first if detalle.id_servicio else none) %}
-                            <tr data-detalle-id="{{ detalle.id_detalle_carrito }}" class="cart-item">
-                                <td class="text-start">
-                                    {{ producto.nombre if producto else (servicio.nombre if servicio else 'Item no identificado') }}
-                                    {% if promocion %}
-                                        <br><small class="text-success">Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</small>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="quantity-control">
-                                        <button class="btn btn-sm btn-secondary decrement" data-id="{{ detalle.id_detalle_carrito }}">-</button>
-                                        <span class="cantidad" data-id="{{ detalle.id_detalle_carrito }}">{{ cantidad }}</span>
-                                        <button class="btn btn-sm btn-secondary increment" data-id="{{ detalle.id_detalle_carrito }}">+</button>
-                                    </div>
-                                </td>
-                                <td class="text-center precio-unitario" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(precio_unitario) }}</td>
-                                <td class="text-center subtotal" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(subtotal) }}</td>
-                                <td class="text-center">
-                                    <button class="btn btn-danger btn-sm" onclick="eliminarItem({{ detalle.id_detalle_carrito }})">Eliminar</button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" class="text-end"><strong>Total</strong></td>
-                            <td class="text-center total"><strong>${{ '%.2f'|format(total) }}</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="cart-items">
+                {% for detalle in carrito.detalles %}
+                    {% set producto = detalle.producto %}
+                    {% set servicio = detalle.servicio %}
+                    {% set precio_unitario = detalle.precio_unitario if detalle.precio_unitario is not none else 0.00 %}
+                    {% set cantidad = detalle.cantidad if detalle.cantidad is not none else 0 %}
+                    {% set subtotal = cantidad * precio_unitario %}
+                    {% set total = total + subtotal %}
+                    {% set promocion = promociones | selectattr("id_producto", "equalto", detalle.id_producto) | first if detalle.id_producto else (promociones | selectattr("id_servicio", "equalto", detalle.id_servicio) | first if detalle.id_servicio else none) %}
+                    <div class="card cart-item" data-detalle-id="{{ detalle.id_detalle_carrito }}">
+                        <div class="cart-item-content">
+                            <div class="cart-item-details">
+                                <h5>{{ producto.nombre if producto else (servicio.nombre if servicio else 'Item no identificado') }}</h5>
+                                {% if promocion %}
+                                    <p class="promocion">Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</p>
+                                {% endif %}
+                            </div>
+                            <div class="cart-item-quantity">
+                                <div class="quantity-control">
+                                    <button class="btn-decrement" data-id="{{ detalle.id_detalle_carrito }}">-</button>
+                                    <span class="cantidad" data-id="{{ detalle.id_detalle_carrito }}">{{ cantidad }}</span>
+                                    <button class="btn-increment" data-id="{{ detalle.id_detalle_carrito }}">+</button>
+                                </div>
+                            </div>
+                            <div class="cart-item-price">
+                                <p>Precio Unitario: <span class="precio-unitario" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(precio_unitario) }}</span></p>
+                                <p>Subtotal: <span class="subtotal" data-id="{{ detalle.id_detalle_carrito }}">${{ '%.2f'|format(subtotal) }}</span></p>
+                            </div>
+                            <div class="cart-item-actions">
+                                <button class="btn-delete" onclick="eliminarItem({{ detalle.id_detalle_carrito }})">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
-            <div class="text-center mt-4">
-                <a href="{{ url_for('client.procesar_compra') }}" class="btn btn-success btn-lg">Proceder al Pago</a>
+            <div class="cart-total">
+                <h5>Total: <span class="total">${{ '%.2f'|format(total) }}</span></h5>
+            </div>
+            <div class="cart-actions">
+                <a href="{{ url_for('client.procesar_compra') }}" class="btn-primary">Proceder al Pago</a>
             </div>
         {% else %}
-            <div class="text-center">
-                <p class="text-info mb-4">Tu carrito está vacío.</p>
-                <a href="{{ url_for('client.productos') }}" class="btn btn-primary btn-lg">Volver a Productos</a>
+            <div class="empty-cart">
+                <p class="empty-message">Tu carrito está vacío.</p>
+                <a href="{{ url_for('client.productos') }}" class="btn-primary">Volver a Productos</a>
             </div>
         {% endif %}
     </div>
@@ -86,10 +74,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             actualizarTotal();
 
-            document.querySelectorAll('.increment, .decrement').forEach(button => {
+            document.querySelectorAll('.btn-increment, .btn-decrement').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const detalleId = e.target.dataset.id;
-                    const isIncrement = e.target.classList.contains('increment');
+                    const isIncrement = e.target.classList.contains('btn-increment');
                     const response = await fetch(`/client/actualizar_cantidad/${detalleId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -127,9 +115,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        document.querySelector(`tr[data-detalle-id="${detalleId}"]`).remove();
+                        document.querySelector(`.cart-item[data-detalle-id="${detalleId}"]`).remove();
                         actualizarTotal();
-                        if (document.querySelectorAll('tbody tr').length === 0) {
+                        if (document.querySelectorAll('.cart-item').length === 0) {
                             window.location.reload();
                         }
                     } else {

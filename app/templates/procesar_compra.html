@@ -4,48 +4,47 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/procesar_compra.css') }}">
 {% endblock %}
 {% block content %}
-    <div class="container mt-5">
-        <h1 class="mb-4">Procesar Compra</h1>
+    <div class="container">
+        <h1>Procesar Compra</h1>
+        <p class="lead">Confirma los detalles de tu compra y selecciona el método de pago.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
         {% if carrito and carrito.detalles %}
             {% set total = 0 %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio Unitario</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for detalle in carrito.detalles %}
-                        {% set producto = detalle.producto %}
-                        {% set subtotal = detalle.cantidad * detalle.precio_unitario %}
-                        {% set total = total + subtotal %}
-                        <tr>
-                            <td>{{ producto.nombre }}</td>
-                            <td>{{ detalle.cantidad }}</td>
-                            <td>${{ '%.2f'|format(detalle.precio_unitario) }}</td>
-                            <td>${{ '%.2f'|format(subtotal) }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3"><strong>Total</strong></td>
-                        <td><strong>${{ '%.2f'|format(total) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
-            <form method="POST" action="{{ url_for('client.procesar_compra') }}">
-                <div class="mb-3">
+            <div class="cart-items">
+                {% for detalle in carrito.detalles %}
+                    {% set producto = detalle.producto %}
+                    {% set subtotal = detalle.cantidad * detalle.precio_unitario %}
+                    {% set total = total + subtotal %}
+                    <div class="card cart-item">
+                        <div class="cart-item-content">
+                            <div class="cart-item-details">
+                                <h5>{{ producto.nombre }}</h5>
+                            </div>
+                            <div class="cart-item-quantity">
+                                <p>Cantidad: <span class="cantidad">{{ detalle.cantidad }}</span></p>
+                            </div>
+                            <div class="cart-item-price">
+                                <p>Precio Unitario: <span class="precio-unitario">${{ '%.2f'|format(detalle.precio_unitario) }}</span></p>
+                                <p>Subtotal: <span class="subtotal">${{ '%.2f'|format(subtotal) }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="cart-total">
+                <h5>Total: <span class="total">${{ '%.2f'|format(total) }}</span></h5>
+            </div>
+            <form method="POST" action="{{ url_for('client.procesar_compra') }}" class="payment-form">
+                <div class="form-group">
                     <label for="metodo_pago" class="form-label">Método de Pago</label>
                     <select class="form-select" id="metodo_pago" name="metodo_pago" required>
                         <option value="">Selecciona un método</option>
@@ -54,11 +53,74 @@
                         <option value="transferencia">Transferencia</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-success">Confirmar Compra y Generar Factura</button>
+                <button type="submit" class="btn-primary">Confirmar Compra y Generar Factura</button>
             </form>
         {% else %}
-            <p class="text-info">No tienes items en el carrito para procesar.</p>
-            <a href="{{ url_for('client.productos') }}" class="btn btn-primary">Volver a Productos</a>
+            <div class="empty-cart">
+                <p class="empty-message">No tienes items en el carrito para procesar.</p>
+                <a href="{{ url_for('client.productos') }}" class="btn-primary">Volver a Productos</a>
+            </div>
         {% endif %}
     </div>
+{% endblock %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            actualizarTotal();
+
+            document.querySelectorAll('.btn-increment, .btn-decrement').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const detalleId = e.target.dataset.id;
+                    const isIncrement = e.target.classList.contains('btn-increment');
+                    const response = await fetch(`/client/actualizar_cantidad/${detalleId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ increment: isIncrement })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        const cantidad = data.cantidad;
+                        const precioUnitario = data.precio_unitario || 0.00;
+                        const subtotal = cantidad * precioUnitario;
+                        document.querySelector(`.cantidad[data-id="${detalleId}"]`).textContent = cantidad;
+                        document.querySelector(`.precio-unitario[data-id="${detalleId}"]`).textContent = `$${precioUnitario.toFixed(2)}`;
+                        document.querySelector(`.subtotal[data-id="${detalleId}"]`).textContent = `$${subtotal.toFixed(2)}`;
+                        actualizarTotal();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            function actualizarTotal() {
+                let total = 0;
+                document.querySelectorAll('.subtotal').forEach(subtotal => {
+                    total += parseFloat(subtotal.textContent.replace('$', '') || 0);
+                });
+                document.querySelector('.total').textContent = `$${total.toFixed(2)}`;
+            }
+        });
+
+        function eliminarItem(detalleId) {
+            if (confirm('¿Estás seguro de eliminar este item del carrito?')) {
+                fetch(`/client/eliminar_del_carrito/${detalleId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector(`.cart-item[data-detalle-id="${detalleId}"]`).remove();
+                        actualizarTotal();
+                        if (document.querySelectorAll('.cart-item').length === 0) {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => alert('Error al eliminar el item.'));
+            }
+        }
+    </script>
 {% endblock %}

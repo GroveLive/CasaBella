@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Contacto - Casa Bella{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/contactos.css') }}">
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <h1>Contáctanos</h1>
+        <p class="lead">Estamos aquí para ayudarte. Ponte en contacto con nosotros a través de nuestras redes sociales o envíanos un mensaje.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="contact-content">
+            <div class="card contact-info">
+                <div class="card-content">
+                    <h5>Información de Contacto</h5>
+                    <ul class="contact-list">
+                        <li class="contact-item">
+                            <i class="bi bi-envelope me-2"></i>
+                            <span>xiomarawo-0298@hotmail.com</span>
+                        </li>
+                        <li class="contact-item">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            <span>Calle 5 4, Guavatá, Colombia</span>
+                        </li>
+                        <li class="contact-item">
+                            <i class="bi bi-clock me-2"></i>
+                            <span>Lun-Dom: 8:00 AM - 7:00 PM</span>
+                        </li>
+                    </ul>
+                    <div class="social-links">
+                        <a href="https://www.facebook.com/CasaBellasalonydistribuidora1" class="social-link" data-platform="Facebook"><i class="bi bi-facebook fs-5"></i></a>
+                        <a href="https://www.instagram.com/CasaBella_salonydistribuidora1" class="social-link" data-platform="Instagram"><i class="bi bi-instagram fs-5"></i></a>
+                        <a href="https://wa.me/+573143045084" class="social-link" data-platform="WhatsApp"><i class="bi bi-whatsapp fs-5"></i></a>
+                        <a href="mailto:xiomarawo-0298@hotmail.com" class="social-link" data-platform="Email"><i class="bi bi-envelope fs-5"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="card contact-form">
+                <div class="card-content">
+                    <h5>Envíanos un Mensaje</h5>
+                    <form method="POST" action="{{ url_for('client.contacto') }}" class="message-form">
+                        <div class="form-group">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mensaje" class="form-label">Mensaje</label>
+                            <textarea class="form-control" id="mensaje" name="mensaje" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Enviar Mensaje</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.social-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const platform = e.currentTarget.getAttribute('data-platform');
+                    alert(`Estás siendo redirigido a nuestro ${platform}. ¡Gracias por contactarnos!`);
+                    window.location.href = e.currentTarget.href;
+                });
+            });
+        });
+    </script>
+{% endblock %}

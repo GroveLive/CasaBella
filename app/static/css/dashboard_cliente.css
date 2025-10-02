@@ -1,0 +1,185 @@
+/* Dashboard Cliente Styles */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    animation: glideIn 0.8s ease-out;
+}
+
+/* Headings */
+h1.text-secondary {
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+    color: var(--secondary-color);
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="light"] h1.text-secondary {
+    text-shadow: none;
+    color: var(--primary-color);
+}
+
+h1.text-secondary:hover {
+    transform: scale(1.02);
+}
+
+h2 {
+    font-family: "Playfair Display", serif;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+h2::after {
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 3px;
+    background: var(--gradient-primary);
+    bottom: -5px;
+    left: 0;
+    border-radius: 2px;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-elegant);
+    color: var(--text-primary);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.alert-dismissible .btn-close {
+    filter: opacity(0.7);
+    transition: filter 0.3s ease;
+}
+
+.alert-dismissible .btn-close:hover {
+    filter: opacity(1);
+}
+
+/* Buttons */
+.btn-primary, .btn-danger {
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 10px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-elegant);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
+}
+
+.btn-primary:hover, .btn-danger:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary:active, .btn-danger:active {
+    transform: translateY(0);
+}
+
+/* Tables */
+.table {
+    background: var(--card-bg);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: var(--shadow-elegant);
+    margin-bottom: 2rem;
+}
+
+.table thead {
+    background: var(--primary-color);
+    color: var(--text-primary);
+}
+
+.table th, .table td {
+    padding: 1rem;
+    vertical-align: middle;
+    border: 1px solid var(--border-color);
+    transition: background 0.3s ease;
+}
+
+.table tbody tr {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.table tbody tr:hover {
+    transform: translateY(-3px);
+    background: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.table small {
+    color: var(--secondary-color);
+    font-style: italic;
+}
+
+/* Text Info */
+.text-info {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    text-align: center;
+    padding: 1rem;
+    background: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: var(--shadow-elegant);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    h1.text-secondary {
+        font-size: 1.8rem;
+    }
+
+    h2 {
+        font-size: 1.4rem;
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
+
+    .table th, .table td {
+        padding: 0.75rem;
+    }
+
+    .btn-primary, .btn-danger {
+        padding: 0.4rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Animations */
+@keyframes rowFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.table tbody tr {
+    animation: rowFadeIn 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+.table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+.table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+.table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+.table tbody tr:nth-child(5) { animation-delay: 0.5s; }

@@ -2,29 +2,16 @@
 {% block title %}Productos - Casa Bella{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/productos.css') }}">
-    <style>
-        .favorite-btn {
-            transition: color 0.3s;
-        }
-        .favorite-btn.active {
-            color: #ff4d4d;
-        }
-        .promotion-badge {
-            background-color: #dc3545;
-            color: white;
-            font-size: 0.9rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 0.25rem;
-        }
-    </style>
 {% endblock %}
 {% block content %}
-    <div class="container mt-5">
-        <h1 class="mb-4">Nuestros Productos</h1>
-        <p class="lead mb-4">Explora los productos premium que ofrecemos en Casa Bella.</p>
-        <div class="mb-4">
-            <a href="{{ url_for('client.productos') }}" class="btn btn-outline-primary {{ '' if not filter_promotions else 'btn-outline-secondary' }}">Todos los Productos</a>
-            <a href="{{ url_for('client.productos', filter='promotions') }}" class="btn btn-primary {{ 'btn-outline-secondary' if not filter_promotions else '' }}">Solo en Promoción</a>
+    <div class="productos-container">
+        <div class="productos-header">
+            <h1>Nuestros Productos</h1>
+            <p class="lead">Explora los productos premium que ofrecemos en Casa Bella.</p>
+        </div>
+        <div class="filter-buttons">
+            <a href="{{ url_for('client.productos') }}" class="filter-btn {{ 'active' if not filter_promotions else '' }}">Todos los Productos</a>
+            <a href="{{ url_for('client.productos', filter='promotions') }}" class="filter-btn {{ '' if not filter_promotions else 'active' }}">Solo en Promoción</a>
         </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -33,49 +20,53 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <div class="row g-4">
+        <div class="product-cards-grid">
             {% for producto in productos %}
-            <div class="col-md-6 col-lg-4">
-                <div class="card product-card h-100 border-0 shadow-sm">
-                    <div class="card-img-container">
-                        <img src="{{ url_for('static', filename='images/producto_' ~ producto.id_producto ~ '.jpg') if not producto.imagen_url else producto.imagen_url }}" class="card-img-top product-image" alt="{{ producto.nombre }}" onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}';">
+            <div class="product-card h-100">
+                <div class="card-img-container">
+                    <img src="{{ url_for('static', filename='images/producto_' ~ producto.id_producto ~ '.jpg') if not producto.imagen_url else producto.imagen_url }}" class="product-image" alt="{{ producto.nombre }}" onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}';">
+                    {% set promocion = promociones | selectattr('id_producto', 'equalto', producto.id_producto) | first %}
+                    {% if promocion %}
+                        <span class="promotion-badge">{{ promocion.descuento }}% OFF</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ producto.nombre }}</h5>
+                    <p class="card-text">{{ producto.descripcion or 'Sin descripción' }}</p>
+                    <div class="price-section">
+                        {% if promocion %}
+                            <div class="price-container">
+                                <span class="original-price">${{ '%0.2f'|format(producto.precio) }}</span>
+                                <span class="price-discount">${{ '%0.2f'|format((producto.precio * (1 - (promocion.descuento / 100)))|round(2)) }}</span>
+                            </div>
+                        {% else %}
+                            <span class="current-price">${{ '%0.2f'|format(producto.precio) }}</span>
+                        {% endif %}
+                        <span class="stock-badge">
+                            <i class="bi bi-box-seam me-1"></i>{{ producto.stock }} en stock
+                        </span>
                     </div>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title text-custom-accent fw-bold">{{ producto.nombre }}</h5>
-                        <p class="card-text flex-grow-1">{{ producto.descripcion or 'Sin descripción' }}</p>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            {% set promocion = promociones | selectattr('id_producto', 'equalto', producto.id_producto) | first %}
-                            {% if promocion %}
-                                <div>
-                                    <span class="h4 fw-bold mb-0 text-decoration-line-through">${{ '%0.2f'|format(producto.precio) }}</span>
-                                    <span class="h4 fw-bold mb-0 text-danger">${{ '%0.2f'|format((producto.precio * (1 - (promocion.descuento / 100)))|round(2)) }}</span>
-                                    <span class="promotion-badge ms-2">{{ promocion.descuento }}% OFF</span>
-                                </div>
-                            {% else %}
-                                <span class="h4 fw-bold mb-0">${{ '%0.2f'|format(producto.precio) }}</span>
-                            {% endif %}
-                            <span class="badge bg-custom-accent">
-                                <i class="bi bi-box-seam me-1"></i>{{ producto.stock }} en stock
-                            </span>
-                        </div>
-                        <div class="d-flex justify-content-between mt-auto">
-                            <a href="{{ url_for('client.agregar_carrito', item_id=producto.id_producto) }}" class="btn btn-primary">
-                                <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
-                            </a>
-                            <button class="btn btn-outline-secondary favorite-btn" id="favorite-btn-{{ producto.id_producto }}" data-item-type="producto" data-item-id="{{ producto.id_producto }}" title="Agregar a favoritos">
-                                <i class="bi bi-heart"></i>
-                            </button>
-                            <a href="{{ url_for('client.resenas', item_type='producto', item_id=producto.id_producto) }}" class="btn btn-outline-secondary" title="Ver reseñas">
-                                <i class="bi bi-star"></i>
-                            </a>
-                        </div>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('client.agregar_carrito', item_id=producto.id_producto) }}" class="btn-agregar-carrito">
+                            <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
+                        </a>
+                        <button class="btn-icon favorite-btn" id="favorite-btn-{{ producto.id_producto }}" data-item-type="producto" data-item-id="{{ producto.id_producto }}" title="Agregar a favoritos">
+                            <i class="bi bi-heart"></i>
+                        </button>
+                        <a href="{{ url_for('client.resenas', item_type='producto', item_id=producto.id_producto) }}" class="btn-icon" title="Ver reseñas">
+                            <i class="bi bi-star"></i>
+                        </a>
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% if not productos %}
-            <p class="text-center">No hay productos disponibles en este momento.</p>
+            <div class="empty-state">
+                <i class="bi bi-emoji-frown"></i>
+                <h3>No hay productos disponibles</h3>
+                <p>Lo sentimos, no hay productos disponibles en este momento.</p>
+            </div>
         {% endif %}
     </div>
 {% endblock %}
@@ -125,6 +116,12 @@
                         alert('Error al procesar la solicitud. Por favor, intenta de nuevo.');
                     }
                 });
+            });
+
+            // Handle card selection
+            $('.product-card').click(function() {
+                $('.product-card').removeClass('selected');
+                $(this).addClass('selected');
             });
         });
     </script>

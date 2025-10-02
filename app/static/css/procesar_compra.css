@@ -124,7 +124,7 @@ h1 {
 
 .cart-item-content {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr;
     gap: 1rem;
     padding: 2rem;
     align-items: center;
@@ -138,51 +138,26 @@ h1 {
     font-family: "Playfair Display", serif;
 }
 
-.cart-item-details .promocion {
-    color: var(--text-secondary);
+/* Quantity */
+.cart-item-quantity p {
+    margin: 0.5rem 0;
     font-size: 0.95rem;
-    font-style: italic;
+    color: var(--text-primary);
     font-family: "Inter", sans-serif;
 }
 
-/* Quantity Controls */
-.quantity-control {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.btn-increment, .btn-decrement {
-    background: var(--gradient-primary);
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    color: white;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-elegant);
-    cursor: pointer;
-}
-
-.btn-increment:hover, .btn-decrement:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-}
-
-.quantity-control .cantidad {
+.cart-item-quantity .cantidad {
     font-weight: 600;
     color: var(--secondary-color);
     background: rgba(30, 41, 59, 0.5);
     border-radius: 5px;
     padding: 0.3rem 0.8rem;
-    min-width: 2rem;
     text-align: center;
     transition: all 0.3s ease;
     font-family: "Inter", sans-serif;
 }
 
-[data-theme="light"] .quantity-control .cantidad {
+[data-theme="light"] .cart-item-quantity .cantidad {
     background: rgba(229, 231, 235, 0.8);
     color: var(--primary-color);
 }
@@ -199,26 +174,6 @@ h1 {
 .cart-item-price .subtotal {
     font-weight: 600;
     color: var(--secondary-color);
-}
-
-/* Actions */
-.btn-delete {
-    background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    color: white;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-elegant);
-    cursor: pointer;
-    text-transform: uppercase;
-    font-family: "Inter", sans-serif;
-}
-
-.btn-delete:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
 }
 
 /* Total */
@@ -239,7 +194,58 @@ h1 {
     color: var(--secondary-color);
 }
 
-/* Proceed Button */
+/* Form */
+.payment-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.75rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: "Inter", sans-serif;
+}
+
+.form-select {
+    width: 100%;
+    padding: 0.95rem 1.25rem;
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    background: rgba(30, 41, 59, 0.5);
+    transition: all 0.4s ease;
+    font-family: "Inter", sans-serif;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px 12px;
+    padding-right: 3rem;
+}
+
+[data-theme="light"] .form-select {
+    background: rgba(229, 231, 235, 0.8);
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    background: var(--card-bg);
+}
+
+/* Buttons */
 .btn-primary {
     width: 100%;
     padding: 1.1rem 3rem;
@@ -337,8 +343,7 @@ h1 {
 
     .cart-item-details,
     .cart-item-quantity,
-    .cart-item-price,
-    .cart-item-actions {
+    .cart-item-price {
         margin-bottom: 1rem;
     }
 
@@ -368,15 +373,6 @@ h1 {
         font-size: 1.3rem;
     }
 
-    .btn-increment, .btn-decrement {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.8rem;
-    }
-
-    .quantity-control .cantidad {
-        padding: 0.2rem 0.6rem;
-    }
-
     .btn-primary {
         padding: 1rem 2rem;
         font-size: 1rem;
@@ -396,8 +392,25 @@ h1 {
         font-size: 1.2rem;
     }
 
-    .cart-item-price p,
-    .cart-item-details .promocion {
+    .cart-item-quantity p,
+    .cart-item-price p {
         font-size: 0.85rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .btn-primary {
+        display: none;
+    }
+
+    .cart-item {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    .empty-message {
+        display: none;
     }
 }
