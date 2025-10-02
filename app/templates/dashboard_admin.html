@@ -5,9 +5,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        .filter-btn.active { background-color: #007bff; color: white; }
         .chart-container { position: relative; height: 400px; margin-top: 20px; }
-        .income-filters { margin-bottom: 20px; }
     </style>
 {% endblock %}
 {% block content %}
@@ -89,7 +87,7 @@
             </div>
         </div>
         <div class="row mt-5">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Usuarios</h5>
@@ -97,19 +95,11 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Gestión de Productos</h5>
                         <a href="{{ url_for('admin.gestion_productos') }}" class="btn btn-primary w-100">Ver Productos</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Gestión de Ingresos</h5>
-                        <a href="{{ url_for('admin.gestion_ingresos') }}" class="btn btn-primary w-100">Ver Ingresos</a>
                     </div>
                 </div>
             </div>
@@ -118,12 +108,7 @@
             <div class="col-md-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Ingresos</h5>
-                        <div class="income-filters mb-3">
-                            <button class="btn filter-btn {{ 'active' if not tipo_filtro or tipo_filtro == 'total' else '' }}" data-filter="total">Total</button>
-                            <button class="btn filter-btn {{ 'active' if tipo_filtro == 'productos' else '' }}" data-filter="productos">Productos</button>
-                            <button class="btn filter-btn {{ 'active' if tipo_filtro == 'servicios' else '' }}" data-filter="servicios">Servicios</button>
-                        </div>
+                        <h5 class="card-title">Ingresos por Productos</h5>
                         <div class="chart-container">
                             <canvas id="chartIngresos"></canvas>
                         </div>
@@ -138,14 +123,20 @@
     <script>
         let chartIngresos;
 
-        function updateChart(filter = 'total') {
-            const url = '{{ url_for('admin.admin_dashboard') }}?tipo_filtro=' + filter;
+        function updateChart() {
+            const url = "{{ url_for('admin.admin_dashboard') }}?tipo_filtro=productos";
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Chart data received:', data); // Debug data
                     const labels = ['Hoy', 'Semana', 'Mes', 'Año'];
                     const datasets = [{
-                        label: 'Ingresos ($)',
+                        label: 'Ingresos por Productos ($)',
                         data: [data.hoy, data.semana, data.mes, data.ano],
                         backgroundColor: [
                             'rgba(54, 162, 235, 0.6)',
@@ -171,10 +162,7 @@
                         data: { labels, datasets },
                         options: {
                             scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: { display: true, text: 'Ingresos ($)' }
-                                },
+                                y: { beginAtZero: true, title: { display: true, text: 'Ingresos ($)' } },
                                 x: { title: { display: true, text: 'Período' } }
                             },
                             plugins: {
@@ -191,19 +179,14 @@
                             }
                         }
                     });
+                })
+                .catch(error => {
+                    console.error('Error fetching chart data:', error);
+                    alert('Error al cargar los datos de la gráfica. Consulta la consola para más detalles.');
                 });
         }
 
-        // Event listeners
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                updateChart(btn.getAttribute('data-filter'));
-            });
-        });
-
-        // Inicializar gráfica
-        updateChart('{{ tipo_filtro if tipo_filtro else "total" }}');
+        // Initialize chart
+        updateChart();
     </script>
 {% endblock %}
