@@ -1,4 +1,4 @@
-/* Dashboard Cliente Styles */
+/* General Styles */
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -92,7 +92,14 @@ h2::after {
     transform: translateY(0);
 }
 
-/* Tables */
+/* Tables (Desktop) */
+.table-responsive {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: var(--shadow-elegant);
+    background: var(--card-bg);
+}
+
 .table {
     background: var(--card-bg);
     border-radius: 15px;
@@ -128,6 +135,63 @@ h2::after {
     font-style: italic;
 }
 
+/* Mobile Cards */
+.table-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-elegant);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: rowFadeIn 0.5s ease-out;
+}
+
+.table-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.table-card .card-content {
+    padding: 1rem;
+}
+
+.table-card h5 {
+    font-family: "Playfair Display", serif;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.table-card p {
+    font-family: "Inter", sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.table-card p strong {
+    color: var(--text-primary);
+}
+
+.table-card small {
+    color: var(--secondary-color);
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.table-card .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.table-card .btn-sm {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+}
+
 /* Text Info */
 .text-info {
     font-size: 1.1rem;
@@ -153,17 +217,56 @@ h2::after {
         font-size: 1.4rem;
     }
 
-    .table {
-        font-size: 0.9rem;
+    .table-responsive {
+        display: none !important;
     }
 
-    .table th, .table td {
+    .table-card .card-content {
         padding: 0.75rem;
     }
 
-    .btn-primary, .btn-danger {
-        padding: 0.4rem 1rem;
-        font-size: 0.9rem;
+    .table-card h5 {
+        font-size: 1.1rem;
+    }
+
+    .table-card p {
+        font-size: 0.85rem;
+    }
+
+    .table-card .btn-sm {
+        padding: 0.35rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    h1.text-secondary {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.2rem;
+    }
+
+    .table-card h5 {
+        font-size: 1rem;
+    }
+
+    .table-card p {
+        font-size: 0.8rem;
+    }
+
+    .table-card small {
+        font-size: 0.75rem;
+    }
+
+    .table-card .btn-sm {
+        padding: 0.3rem 0.7rem;
+        font-size: 0.75rem;
+    }
+
+    .text-info {
+        font-size: 0.95rem;
     }
 }
 
@@ -183,3 +286,21 @@ h2::after {
 .table tbody tr:nth-child(3) { animation-delay: 0.3s; }
 .table tbody tr:nth-child(4) { animation-delay: 0.4s; }
 .table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+
+.table-card:nth-child(1) { animation-delay: 0.1s; }
+.table-card:nth-child(2) { animation-delay: 0.2s; }
+.table-card:nth-child(3) { animation-delay: 0.3s; }
+.table-card:nth-child(4) { animation-delay: 0.4s; }
+.table-card:nth-child(5) { animation-delay: 0.5s; }
+
+/* Print Styles */
+@media print {
+    .btn, .alert {
+        display: none;
+    }
+
+    .table, .table-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}

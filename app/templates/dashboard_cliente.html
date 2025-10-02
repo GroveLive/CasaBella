@@ -25,22 +25,61 @@
         <!-- Historial de Compras -->
         <h2 class="mt-4">Historial de Compras</h2>
         {% if ventas %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID Venta</th>
-                        <th>Fecha</th>
-                        <th>Detalles</th>
-                        <th>Total</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for venta in ventas %}
+            <!-- Desktop Table -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td>{{ venta.id_venta }}</td>
-                            <td>{{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha' }}</td>
-                            <td>
+                            <th>ID Venta</th>
+                            <th>Fecha</th>
+                            <th>Detalles</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ventas %}
+                            <tr>
+                                <td>{{ venta.id_venta }}</td>
+                                <td>{{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha' }}</td>
+                                <td>
+                                    {% for detalle in venta.detalle_ventas %}
+                                        {% if detalle.producto %}
+                                            {{ detalle.producto.nombre }} x {{ detalle.cantidad }} (${{ '%.2f'|format(detalle.precio_unitario) }})
+                                            {% set promocion = promociones|selectattr('id_producto', 'equalto', detalle.id_producto)|first %}
+                                            {% if promocion %}
+                                                <br><small>Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</small>
+                                            {% endif %}
+                                        {% elif detalle.servicio %}
+                                            {{ detalle.servicio.nombre }} x {{ detalle.cantidad }} (${{ '%.2f'|format(detalle.precio_unitario) }})
+                                            {% set promocion = promociones|selectattr('id_servicio', 'equalto', detalle.id_servicio)|first %}
+                                            {% if promocion %}
+                                                <br><small>Promoción: {{ promocion.nombre }} ({{ promocion.descuento }}% descuento)</small>
+                                            {% endif %}
+                                        {% endif %}
+                                        <br>
+                                    {% endfor %}
+                                </td>
+                                <td>${{ '%.2f'|format(venta.total) }}</td>
+                                <td>
+                                    <a href="{{ url_for('client.descargar_factura', venta_id=venta.id_venta) }}" class="btn btn-primary btn-sm">Descargar Factura</a>
+                                    <form method="POST" action="{{ url_for('client.borrar_compra', venta_id=venta.id_venta) }}" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de borrar esta compra?');">Borrar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Mobile Cards -->
+            <div class="d-md-none">
+                {% for venta in ventas %}
+                    <div class="table-card mb-3">
+                        <div class="card-content">
+                            <h5>Venta #{{ venta.id_venta }}</h5>
+                            <p><strong>Fecha:</strong> {{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') if venta.fecha_venta else 'Sin fecha' }}</p>
+                            <p><strong>Detalles:</strong>
                                 {% for detalle in venta.detalle_ventas %}
                                     {% if detalle.producto %}
                                         {{ detalle.producto.nombre }} x {{ detalle.cantidad }} (${{ '%.2f'|format(detalle.precio_unitario) }})
@@ -57,18 +96,18 @@
                                     {% endif %}
                                     <br>
                                 {% endfor %}
-                            </td>
-                            <td>${{ '%.2f'|format(venta.total) }}</td>
-                            <td>
+                            </p>
+                            <p><strong>Total:</strong> ${{ '%.2f'|format(venta.total) }}</p>
+                            <div class="card-actions">
                                 <a href="{{ url_for('client.descargar_factura', venta_id=venta.id_venta) }}" class="btn btn-primary btn-sm">Descargar Factura</a>
                                 <form method="POST" action="{{ url_for('client.borrar_compra', venta_id=venta.id_venta) }}" style="display:inline;">
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de borrar esta compra?');">Borrar</button>
                                 </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         {% else %}
             <p class="text-info">No tienes compras registradas.</p>
         {% endif %}
@@ -76,32 +115,53 @@
         <!-- Historial de Citas -->
         <h2 class="mt-4">Historial de Citas</h2>
         {% if citas %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID Cita</th>
-                        <th>Servicio</th>
-                        <th>Fecha y Hora</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cita in citas %}
+            <!-- Desktop Table -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td>{{ cita.id_cita }}</td>
-                            <td>{{ cita.servicio.nombre if cita.servicio else 'Servicio no encontrado' }}</td>
-                            <td>{{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</td>
-                            <td>{{ cita.estado }}</td>
-                            <td>
+                            <th>ID Cita</th>
+                            <th>Servicio</th>
+                            <th>Fecha y Hora</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cita in citas %}
+                            <tr>
+                                <td>{{ cita.id_cita }}</td>
+                                <td>{{ cita.servicio.nombre if cita.servicio else 'Servicio no encontrado' }}</td>
+                                <td>{{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ cita.estado }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('client.borrar_cita', cita_id=cita.id_cita) }}" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de cancelar esta cita?');">Cancelar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Mobile Cards -->
+            <div class="d-md-none">
+                {% for cita in citas %}
+                    <div class="table-card mb-3">
+                        <div class="card-content">
+                            <h5>Cita #{{ cita.id_cita }}</h5>
+                            <p><strong>Servicio:</strong> {{ cita.servicio.nombre if cita.servicio else 'Servicio no encontrado' }}</p>
+                            <p><strong>Fecha y Hora:</strong> {{ cita.fecha_hora.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Estado:</strong> {{ cita.estado }}</p>
+                            <div class="card-actions">
                                 <form method="POST" action="{{ url_for('client.borrar_cita', cita_id=cita.id_cita) }}" style="display:inline;">
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de cancelar esta cita?');">Cancelar</button>
                                 </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         {% else %}
             <p class="text-info">No tienes citas registradas.</p>
         {% endif %}
